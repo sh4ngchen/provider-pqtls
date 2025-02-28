@@ -1,0 +1,13 @@
+{
+    "C_Cpp.errorSquiggles": "disabled",
+    "files.associations": {
+        "*.sage": "python",
+        "core_names.h": "c",
+        "caesar_cipher.h": "c",
+        "bio.h": "c",
+        "err.h": "c",
+        "provider.h": "c"
+    },
+    "C_Cpp.default.compilerPath": "/usr/bin/gcc",
+    "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools"
+}

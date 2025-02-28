@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build provider",
+            "type": "shell",
+            "command": "cmake --build build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "detail": "Build custom OpenSSL provider"
+        },
+        {
+            "label": "configure provider",
+            "type": "shell",
+            "command": "cmake -S . -B build",
+            "group": "build",
+            "problemMatcher": ["$gcc"],
+            "detail": "Configure custom OpenSSL provider"
+        }
+    ]
+}
