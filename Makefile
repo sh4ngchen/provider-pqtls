@@ -2,11 +2,11 @@
 
 # 编译器和标志
 CC = gcc
-CFLAGS = -Wall -Wextra -fPIC -I/usr/include/openssl
+CFLAGS = -Wall -fPIC -I/usr/include/openssl
 LDFLAGS = -lcrypto
 
 # 目标文件
-PROVIDER_OBJ = provider.o
+PROVIDER_OBJ = provider.o caesar.o
 TEST_OBJ = test.o
 
 # 目标
@@ -42,7 +42,8 @@ uninstall:
 	rm -f /usr/lib/openssl/providers/caesar.so
 
 # 依赖关系
-provider.o: provider.c provider.h
+provider.o: provider.c provider.h caesar.h
+caesar.o: caesar.c caesar.h
 test.o: test.c
 
 .PHONY: all clean install uninstall run-test
