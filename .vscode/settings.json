@@ -6,7 +6,9 @@
         "caesar_cipher.h": "c",
         "bio.h": "c",
         "err.h": "c",
-        "provider.h": "c"
+        "provider.h": "c",
+        "params.h": "c",
+        "core_dispatch.h": "c"
     },
     "C_Cpp.default.compilerPath": "/usr/bin/gcc",
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools"
