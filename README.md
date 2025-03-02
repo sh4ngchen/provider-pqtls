@@ -7,24 +7,16 @@
 1. **Caesar加密Provider实现**：作为学习OpenSSL Provider架构的入门练习
 2. **后量子加密算法Provider实现**：项目的最终目标
 
-## Caesar加密Provider
-
-Caesar加密Provider是一个简单的示例实现，目的是熟悉OpenSSL Provider的开发流程和架构。虽然Caesar加密算法本身不安全（仅作为教学示例），但通过实现这个简单的Provider，我们可以学习：
-
-- Provider的基本结构
-- 如何注册和实现加密算法
-- 如何与OpenSSL核心API交互
-- Provider的编译和加载过程
-
 ### 文件结构
 
 - `caesar.h` 和 `caesar.c`: Caesar加密算法的实现
 - `provider.h` 和 `provider.c`: Provider框架的实现
 - `Makefile`: 编译脚本
 
-### 编译方法
+### Build
 
 ```bash
+git clone https://github.com/sh4ngchen/provider-pqtls.git && cd provider-pqtls
 make && make install && make clean
 ```
 
@@ -48,14 +40,10 @@ openssl enc -provider provider -caesar -d -in ciphertext.txt -out decrypted.txt 
 echo "Khoor Zruog\!" | openssl enc -provider provider -d -caesar -K 03
 ```
 
-## 后量子加密算法Provider
+### TODO
 
-这是项目的最终目标，将实现一个或多个后量子加密算法，并使其能够在TLS协议中使用。
-
-### 计划实现的功能
-
-- 后量子密钥交换算法
-- 后量子数字签名算法
+- 后量子密钥交换算法(Kyber)
+- 后量子数字签名算法(Crystals-Dilithium)
 - TLS握手协议的集成
 - 性能测试和安全分析
 
