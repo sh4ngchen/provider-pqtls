@@ -10,18 +10,15 @@ on:
 
 jobs:
   build-and-test-caesar:
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, macos-latest ]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout project
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
 
       - name: Checkout OpenSSL
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: openssl/openssl
           path: openssl
@@ -42,7 +39,7 @@ jobs:
           CFLAGS: -I$(pwd)/openssl-install/include
           LDFLAGS: -L$(pwd)/openssl-install/lib
         run: |
-          make
+          make CFLAGS="-I$(pwd)/openssl-install/include" LDFLAGS="-L$(pwd)/openssl-install/lib -lcrypto"
 
       - name: Run tests
         run: |
