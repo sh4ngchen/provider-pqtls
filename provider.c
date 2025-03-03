@@ -10,8 +10,13 @@
 #include <openssl/crypto.h>
 #include <openssl/params.h>
 #include <openssl/core_dispatch.h>
-#include "provider.h"
-#include "caesar.h"
+#include "implementations/include/implementations.h"
+#include "implementations/cipher/caesar.h"
+
+typedef struct {
+    const OSSL_CORE_HANDLE *handle;  /* OpenSSL核心句柄 */
+    OSSL_LIB_CTX *libctx;            /* 库上下文 */
+} PROV_CTX;
 
 /* Provider 参数定义 */
 static const OSSL_PARAM caesar_param_types[] = {

@@ -12,6 +12,7 @@
 #include <openssl/proverr.h>
 #include <stdio.h>
 #include "caesar.h"
+#include "../include/implementations.h"
 
 /* Cipher 参数定义 */
 static const OSSL_PARAM caesar_cipher_param_types[] = {
@@ -32,7 +33,8 @@ static const OSSL_PARAM caesar_ctx_param_types[] = {
 };
 
 /* Cipher 参数获取函数 */
-int cipher_get_params(OSSL_PARAM params[])
+static OSSL_FUNC_cipher_get_params_fn cipher_get_params;
+static int cipher_get_params(OSSL_PARAM params[])
 {
     OSSL_PARAM *p;
 
@@ -51,7 +53,8 @@ int cipher_get_params(OSSL_PARAM params[])
     return 1;
 }
 
-int cipher_get_ctx_params(void *vctx, OSSL_PARAM params[])
+static OSSL_FUNC_cipher_get_ctx_params_fn cipher_get_ctx_params;
+static int cipher_get_ctx_params(void *vctx, OSSL_PARAM params[])
 {
     CAESAR_CTX *ctx = (CAESAR_CTX *)vctx;
     OSSL_PARAM *p;
@@ -97,7 +100,8 @@ int cipher_get_ctx_params(void *vctx, OSSL_PARAM params[])
     return 1;
 }
 
-int cipher_set_ctx_params(void *vctx, const OSSL_PARAM params[])
+static OSSL_FUNC_cipher_set_ctx_params_fn cipher_set_ctx_params;
+static int cipher_set_ctx_params(void *vctx, const OSSL_PARAM params[])
 {
     CAESAR_CTX *ctx = (CAESAR_CTX *)vctx;
     const OSSL_PARAM *p;
@@ -121,17 +125,21 @@ int cipher_set_ctx_params(void *vctx, const OSSL_PARAM params[])
     return 1;
 }
 
-const OSSL_PARAM *cipher_gettable_params(void *provctx)
+static OSSL_FUNC_cipher_gettable_params_fn cipher_gettable_params;
+static const OSSL_PARAM *cipher_gettable_params(void *provctx)
 {
     return caesar_cipher_param_types;
 }
 
-const OSSL_PARAM *cipher_gettable_ctx_params(void *ctx)
+static OSSL_FUNC_cipher_gettable_ctx_params_fn cipher_gettable_ctx_params;
+static const OSSL_PARAM *cipher_gettable_ctx_params(void *ctx, void *provctx)
 {
     return caesar_ctx_param_types;
 }
 
-const OSSL_PARAM *cipher_settable_ctx_params(void *ctx)
+
+static OSSL_FUNC_cipher_settable_ctx_params_fn cipher_settable_ctx_params;
+static const OSSL_PARAM *cipher_settable_ctx_params(void *ctx, void *provctx)
 {
     return caesar_ctx_param_types;
 }
@@ -155,7 +163,8 @@ int update_iv(CAESAR_CTX *ctx)
 /**
  * 创建新的凯撒密码上下文
  */
-void *caesar_newctx(void *provctx)
+static OSSL_FUNC_cipher_newctx_fn caesar_newctx;
+static void *caesar_newctx(void *provctx)
 {
     CAESAR_CTX *ctx = OPENSSL_zalloc(sizeof(*ctx));
     if (ctx != NULL) {
@@ -173,7 +182,8 @@ void *caesar_newctx(void *provctx)
 /**
  * 复制凯撒密码上下文
  */
-void *caesar_dupctx(void *vctx)
+static OSSL_FUNC_cipher_dupctx_fn caesar_dupctx;
+static void *caesar_dupctx(void *vctx)
 {
     CAESAR_CTX *src = (CAESAR_CTX *)vctx;
     CAESAR_CTX *dst;
@@ -271,7 +281,8 @@ static int caesar_init(void *vctx, const unsigned char *key, size_t keylen,
 /**
  * 初始化凯撒密码加密
  */
-int caesar_encrypt_init(void *vctx, const unsigned char *key, size_t keylen,
+static OSSL_FUNC_cipher_encrypt_init_fn caesar_encrypt_init;
+static int caesar_encrypt_init(void *vctx, const unsigned char *key, size_t keylen,
                        const unsigned char *iv, size_t ivlen,
                        const OSSL_PARAM params[])
 {
@@ -281,7 +292,8 @@ int caesar_encrypt_init(void *vctx, const unsigned char *key, size_t keylen,
 /**
  * 初始化凯撒密码解密
  */
-int caesar_decrypt_init(void *vctx, const unsigned char *key, size_t keylen,
+static OSSL_FUNC_cipher_decrypt_init_fn caesar_decrypt_init;
+static int caesar_decrypt_init(void *vctx, const unsigned char *key, size_t keylen,
                        const unsigned char *iv, size_t ivlen,
                        const OSSL_PARAM params[])
 {
@@ -289,9 +301,58 @@ int caesar_decrypt_init(void *vctx, const unsigned char *key, size_t keylen,
 }
 
 /**
+ * 执行凯撒密码加密/解密（直接处理）
+ */
+static OSSL_FUNC_cipher_cipher_fn caesar_cipher;
+static int caesar_cipher(void *vctx, unsigned char *out, size_t *outl,
+                 size_t outsize, const unsigned char *in, size_t inl)
+{
+    CAESAR_CTX *ctx = (CAESAR_CTX *)vctx;
+    size_t i;
+    int shift;
+
+    /* 基本参数检查 */
+    if (ctx == NULL || in == NULL) {
+        return 0;
+    }
+
+    /* 处理空输入 */
+    if (inl == 0) {
+        if (outl)
+            *outl = 0;
+        return 1;
+    }
+
+    /* 检查输出缓冲区大小 */
+    if (out != NULL && outsize < inl) {
+        ERR_raise(ERR_LIB_PROV, PROV_R_OUTPUT_BUFFER_TOO_SMALL);
+        return 0;
+    }
+
+    /* 根据加密/解密模式设置位移 */
+    shift = ctx->enc ? ctx->shift : (26 - ctx->shift) % 26;
+
+    /* 执行凯撒加密/解密 */
+    for (i = 0; i < inl; i++) {
+        if (in[i] >= 'A' && in[i] <= 'Z')
+            out[i] = 'A' + ((in[i] - 'A' + shift) % 26);
+        else if (in[i] >= 'a' && in[i] <= 'z')
+            out[i] = 'a' + ((in[i] - 'a' + shift) % 26);
+        else
+            out[i] = in[i];
+    }
+
+    if (outl)
+        *outl = inl;
+    
+    return 1;
+}
+
+/**
  * 执行凯撒密码加密/解密（分块处理）
  */
-int caesar_update(void *vctx, unsigned char *out, size_t *outl,
+static OSSL_FUNC_cipher_update_fn caesar_update;
+static int caesar_update(void *vctx, unsigned char *out, size_t *outl,
                  size_t outsize, const unsigned char *in, size_t inl)
 {
     CAESAR_CTX *ctx = (CAESAR_CTX *)vctx;
@@ -383,7 +444,8 @@ int caesar_update(void *vctx, unsigned char *out, size_t *outl,
 /**
  * 完成凯撒密码加密/解密
  */
-int caesar_final(void *vctx, unsigned char *out, size_t *outl,
+static OSSL_FUNC_cipher_final_fn caesar_final;
+static int caesar_final(void *vctx, unsigned char *out, size_t *outl,
                 size_t outsize)
 {
     CAESAR_CTX *ctx = (CAESAR_CTX *)vctx;
@@ -421,56 +483,10 @@ int caesar_final(void *vctx, unsigned char *out, size_t *outl,
 }
 
 /**
- * 执行凯撒密码加密/解密（直接处理）
- */
-int caesar_cipher(void *vctx, unsigned char *out, size_t *outl,
-                 size_t outsize, const unsigned char *in, size_t inl)
-{
-    CAESAR_CTX *ctx = (CAESAR_CTX *)vctx;
-    size_t i;
-    int shift;
-
-    /* 基本参数检查 */
-    if (ctx == NULL || in == NULL) {
-        return 0;
-    }
-
-    /* 处理空输入 */
-    if (inl == 0) {
-        if (outl)
-            *outl = 0;
-        return 1;
-    }
-
-    /* 检查输出缓冲区大小 */
-    if (out != NULL && outsize < inl) {
-        ERR_raise(ERR_LIB_PROV, PROV_R_OUTPUT_BUFFER_TOO_SMALL);
-        return 0;
-    }
-
-    /* 根据加密/解密模式设置位移 */
-    shift = ctx->enc ? ctx->shift : (26 - ctx->shift) % 26;
-
-    /* 执行凯撒加密/解密 */
-    for (i = 0; i < inl; i++) {
-        if (in[i] >= 'A' && in[i] <= 'Z')
-            out[i] = 'A' + ((in[i] - 'A' + shift) % 26);
-        else if (in[i] >= 'a' && in[i] <= 'z')
-            out[i] = 'a' + ((in[i] - 'a' + shift) % 26);
-        else
-            out[i] = in[i];
-    }
-
-    if (outl)
-        *outl = inl;
-    
-    return 1;
-}
-
-/**
  * 释放凯撒密码上下文
  */
-void caesar_freectx(void *vctx)
+static OSSL_FUNC_cipher_freectx_fn caesar_freectx;
+static void caesar_freectx(void *vctx)
 {
     CAESAR_CTX *ctx = (CAESAR_CTX *)vctx;
     if (ctx != NULL) {

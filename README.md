@@ -17,7 +17,7 @@
 
 ```bash
 git clone https://github.com/sh4ngchen/provider-pqtls.git && cd provider-pqtls
-make && make install && make clean
+make && make install
 ```
 
 ### 使用方法

@@ -16,11 +16,6 @@
 #define CAESAR_KEY_LENGTH 1    /* 凯撒密码密钥长度（1字节） */
 #define CAESAR_BLOCK_SIZE 1    /* 凯撒密码块大小（1字节） */
 
-/* 错误代码 */
-#define CAESAR_R_INVALID_KEY_LENGTH     1
-#define CAESAR_R_INVALID_OPERATION      2
-#define CAESAR_R_OUTPUT_BUFFER_TOO_SMALL 3
-#define CAESAR_R_CIPHER_OPERATION_FAILED 4
 
 /* IV状态 */
 typedef enum {
@@ -57,34 +52,7 @@ typedef struct {
     void *provctx;          /* Provider上下文 */
 } CAESAR_CTX;
 
-/* 函数声明 */
-void *caesar_newctx(void *provctx);
-void *caesar_dupctx(void *ctx);
-int caesar_encrypt_init(void *vctx, const unsigned char *key, size_t keylen,
-                       const unsigned char *iv, size_t ivlen,
-                       const OSSL_PARAM params[]);
-int caesar_decrypt_init(void *vctx, const unsigned char *key, size_t keylen,
-                       const unsigned char *iv, size_t ivlen,
-                       const OSSL_PARAM params[]);
-int caesar_update(void *ctx, unsigned char *out, size_t *outl,
-                 size_t outsize, const unsigned char *in, size_t inl);
-int caesar_final(void *vctx, unsigned char *out, size_t *outl,
-                size_t outsize);
-int caesar_cipher(void *vctx, unsigned char *out, size_t *outl,
-                 size_t outsize, const unsigned char *in, size_t inl);
-void caesar_freectx(void *vctx);
-
-/* 参数函数 */
-int cipher_get_params(OSSL_PARAM params[]);
-int cipher_get_ctx_params(void *vctx, OSSL_PARAM params[]);
-int cipher_set_ctx_params(void *vctx, const OSSL_PARAM params[]);
-const OSSL_PARAM *cipher_gettable_params(void *provctx);
-const OSSL_PARAM *cipher_gettable_ctx_params(void *ctx);
-const OSSL_PARAM *cipher_settable_ctx_params(void *ctx);
-
 /* 辅助函数 */
 int update_iv(CAESAR_CTX *ctx);
-
-extern const OSSL_DISPATCH caesar_cipher_functions[];
 
 #endif /* CAESAR_H */ 

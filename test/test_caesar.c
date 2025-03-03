@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     int ret = 1;
 
     // 加载provider
-    provider = OSSL_PROVIDER_load(NULL, "/root/provider-pqtls/provider.so");
+    provider = OSSL_PROVIDER_load(NULL, "/usr/local/lib64/ossl-modules/caesar.so");
     if (provider == NULL) {
         fprintf(stderr, "加载provider失败\n");
         print_error();

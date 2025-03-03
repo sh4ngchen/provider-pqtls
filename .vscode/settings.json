@@ -8,7 +8,10 @@
         "err.h": "c",
         "provider.h": "c",
         "params.h": "c",
-        "core_dispatch.h": "c"
+        "core_dispatch.h": "c",
+        "caesar.h": "c",
+        "implementations.h": "c",
+        "crypto.h": "c"
     },
     "C_Cpp.default.compilerPath": "/usr/bin/gcc",
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools"
