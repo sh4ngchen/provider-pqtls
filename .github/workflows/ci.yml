@@ -1,0 +1,49 @@
+name: "Linux & macOS GitHub CI"
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test-caesar:
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Checkout OpenSSL
+        uses: actions/checkout@v3
+        with:
+          repository: openssl/openssl
+          path: openssl
+
+      - name: Configure OpenSSL
+        run: |
+          mkdir ../openssl-install
+          ./Configure --prefix=$(cd ..; pwd)/openssl-install --libdir=lib
+          ./configdata.pm --dump
+        working-directory: openssl
+
+      - name: Build and install OpenSSL
+        run: make -s install_sw
+        working-directory: openssl
+
+      - name: Build project
+        env:
+          CFLAGS: -I$(pwd)/openssl-install/include
+          LDFLAGS: -L$(pwd)/openssl-install/lib
+        run: |
+          make
+
+      - name: Run tests
+        run: |
+          make run-test
