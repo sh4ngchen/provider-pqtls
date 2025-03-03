@@ -2,48 +2,62 @@
 
 # 编译器和标志
 CC = gcc
-CFLAGS = -Wall -fPIC -I/usr/include/openssl
+CFLAGS = -Wall -fPIC -I/usr/include/openssl -Iimplementations/include
 LDFLAGS = -lcrypto
 
+# 目录定义
+SRC_DIR = .
+BUILD_DIR = _build
+OBJ_DIR = $(BUILD_DIR)/obj
+
 # 目标文件
-PROVIDER_OBJ = provider.o caesar.o
-TEST_OBJ = test.o
+PROVIDER_OBJ = $(OBJ_DIR)/provider.o $(OBJ_DIR)/caesar.o
+TEST_OBJ = $(OBJ_DIR)/test_caesar.o
 
 # 目标
-all: caesar.so test
+all: $(BUILD_DIR)/caesar.so $(BUILD_DIR)/test_caesar
+
+# 创建构建目录
+$(BUILD_DIR) $(OBJ_DIR):
+	mkdir -p $@
 
 # 编译provider共享库
-caesar.so: $(PROVIDER_OBJ)
+$(BUILD_DIR)/caesar.so: $(PROVIDER_OBJ) | $(BUILD_DIR)
 	$(CC) -shared -o $@ $^ $(LDFLAGS)
 
 # 编译测试程序
-test: $(TEST_OBJ)
+$(BUILD_DIR)/test_caesar: $(TEST_OBJ) $(BUILD_DIR)/caesar.so | $(BUILD_DIR)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # 编译.c文件为.o文件
-%.o: %.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/caesar.o: implementations/cipher/caesar.c | $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/test_caesar.o: test/test_caesar.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # 运行测试
 run-test: all
-	./test
+	$(BUILD_DIR)/test_caesar
 
 # 清理生成的文件
 clean:
-	rm -f *.o *.so test
+	rm -rf $(BUILD_DIR)
 
 # 安装provider到系统目录
-install: caesar.so
-	cp caesar.so /usr/local/lib64/ossl-modules/caesar.so
+install: $(BUILD_DIR)/caesar.so
+	cp $(BUILD_DIR)/caesar.so /usr/local/lib64/ossl-modules/caesar.so
 
 # 卸载provider
 uninstall:
 	rm -f /usr/local/lib64/ossl-modules/caesar.so
 
 # 依赖关系
-provider.o: provider.c provider.h caesar.h
-caesar.o: caesar.c caesar.h
-test.o: test.c
+$(OBJ_DIR)/provider.o: provider.c implementations/include/implementations.h
+$(OBJ_DIR)/caesar.o: implementations/cipher/caesar.c implementations/cipher/caesar.h implementations/include/implementations.h
+$(OBJ_DIR)/test_caesar.o: test/test_caesar.c
 
 .PHONY: all clean install uninstall run-test
-
