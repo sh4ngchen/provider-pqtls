@@ -1,4 +1,4 @@
-name: "Linux & macOS GitHub CI"
+name: "Linux GitHub CI"
 
 on:
   push:
@@ -39,7 +39,8 @@ jobs:
           CFLAGS: -I$(pwd)/openssl-install/include
           LDFLAGS: -L$(pwd)/openssl-install/lib
         run: |
-          make CFLAGS="-I$(pwd)/openssl-install/include" LDFLAGS="-L$(pwd)/openssl-install/lib -lcrypto"
+          make CFLAGS="-I$(pwd)/openssl-install/include" LDFLAGS="-L$(pwd)/openssl-install/lib -lcrypto" && \
+          make install
 
       - name: Run tests
         run: |
