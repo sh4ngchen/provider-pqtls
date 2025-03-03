@@ -2,7 +2,7 @@
 
 # 编译器和标志
 CC = gcc
-CFLAGS = -Wall -fPIC -I/usr/include/openssl -Iimplementations/include
+CFLAGS = -Wall -fPIC -I/usr/include/openssl
 LDFLAGS = -lcrypto
 
 # 目录定义
