@@ -43,4 +43,4 @@ jobs:
 
       - name: Run tests
         run: |
-          make run-test
+          export OPENSSL_MODULES=$(pwd)/_build && make run-test
