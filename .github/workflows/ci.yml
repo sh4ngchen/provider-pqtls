@@ -34,13 +34,12 @@ jobs:
         run: make -s install_sw
         working-directory: openssl
 
-      - name: Build project
+      - name: Build and install project
         env:
           CFLAGS: -I$(pwd)/openssl-install/include
           LDFLAGS: -L$(pwd)/openssl-install/lib
         run: |
-          make CFLAGS="-I$(pwd)/openssl-install/include" LDFLAGS="-L$(pwd)/openssl-install/lib -lcrypto" && \
-          make install
+          make CFLAGS="-I$(pwd)/openssl-install/include" LDFLAGS="-L$(pwd)/openssl-install/lib -lcrypto"
 
       - name: Run tests
         run: |

@@ -49,6 +49,7 @@ clean:
 
 # 安装provider到系统目录
 install: $(BUILD_DIR)/caesar.so
+	mkdir -p /usr/local/lib64/ossl-modules
 	cp $(BUILD_DIR)/caesar.so /usr/local/lib64/ossl-modules/caesar.so
 
 # 卸载provider
