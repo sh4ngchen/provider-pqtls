@@ -11,7 +11,6 @@
 #include <openssl/params.h>
 #include <openssl/core_dispatch.h>
 #include "implementations/include/implementations.h"
-#include "implementations/cipher/caesar.h"
 
 typedef struct {
     const OSSL_CORE_HANDLE *handle;  /* OpenSSL核心句柄 */
@@ -19,7 +18,7 @@ typedef struct {
 } PROV_CTX;
 
 /* Provider 参数定义 */
-static const OSSL_PARAM caesar_param_types[] = {
+static const OSSL_PARAM provider_param_types[] = {
     OSSL_PARAM_utf8_ptr(OSSL_PROV_PARAM_NAME, NULL, 0),
     OSSL_PARAM_utf8_ptr(OSSL_PROV_PARAM_VERSION, NULL, 0),
     OSSL_PARAM_utf8_ptr(OSSL_PROV_PARAM_BUILDINFO, NULL, 0),
@@ -27,17 +26,17 @@ static const OSSL_PARAM caesar_param_types[] = {
 };
 
 /* Provider 参数获取函数 */
-static const OSSL_PARAM *caesar_gettable_params(void *provctx)
+static const OSSL_PARAM *provider_gettable_params(void *provctx)
 {
-    return caesar_param_types;
+    return provider_param_types;
 }
 
-static OSSL_FUNC_provider_get_params_fn caesar_get_params;
-static int caesar_get_params(void *provctx, OSSL_PARAM params[])
+static OSSL_FUNC_provider_get_params_fn provider_get_params;
+static int provider_get_params(void *provctx, OSSL_PARAM params[])
 {
-    static const char name[] = "Caesar Provider";
+    static const char name[] = "Post-Quantum Provider";
     static const char version[] = "1.0.0";
-    static const char buildinfo[] = "Caesar Provider v1.0.0";
+    static const char buildinfo[] = "Post-Quantum Provider v1.0.0";
     OSSL_PARAM *p;
 
     p = OSSL_PARAM_locate(params, OSSL_PROV_PARAM_NAME);
@@ -58,6 +57,11 @@ static const OSSL_ALGORITHM provider_ciphers[] = {
     { NULL, NULL, NULL, NULL }
 };
 
+static const OSSL_ALGORITHM provider_keyexch[] = {
+    { "KYBER", "provider=kyber", kyber_kem_functions, "Kyber Key Exchange Implementation" },
+    { NULL, NULL, NULL, NULL }
+};
+
 /**
  * 查询provider支持的算法
  */
@@ -68,6 +72,8 @@ static const OSSL_ALGORITHM *local_query(void *provctx, int operation_id,
     switch (operation_id) {
     case OSSL_OP_CIPHER:
         return provider_ciphers;
+    case OSSL_OP_KEYEXCH:
+        return provider_keyexch;
     }
     return NULL;
 }
@@ -100,8 +106,8 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
     static const OSSL_DISPATCH provider_functions[] = {
         { OSSL_FUNC_PROVIDER_TEARDOWN, (void (*)(void))local_teardown },
         { OSSL_FUNC_PROVIDER_QUERY_OPERATION, (void (*)(void))local_query },
-        { OSSL_FUNC_PROVIDER_GET_PARAMS, (void (*)(void))caesar_get_params },
-        { OSSL_FUNC_PROVIDER_GETTABLE_PARAMS, (void (*)(void))caesar_gettable_params },
+        { OSSL_FUNC_PROVIDER_GET_PARAMS, (void (*)(void))provider_get_params },
+        { OSSL_FUNC_PROVIDER_GETTABLE_PARAMS, (void (*)(void))provider_gettable_params },
         { 0, NULL }
     };
     *out = provider_functions;
