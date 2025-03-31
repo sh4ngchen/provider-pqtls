@@ -1,7 +1,7 @@
 /**
  * OpenSSL 3.0 Provider - Provider Implementation
  * 
- * 这个文件实现了一个OpenSSL 3.0 provider，提供凯撒密码加密功能。
+ * 这个文件实现了一个OpenSSL 3.0 provider，提供后量子加密功能。
  */
 
 #include <string.h>
@@ -12,10 +12,20 @@
 #include <openssl/core_dispatch.h>
 #include "implementations/include/implementations.h"
 
-typedef struct {
-    const OSSL_CORE_HANDLE *handle;  /* OpenSSL核心句柄 */
-    OSSL_LIB_CTX *libctx;            /* 库上下文 */
-} PROV_CTX;
+// extern const OSSL_DISPATCH kyber_keymgmt_512_functions[];
+// extern const OSSL_DISPATCH kyber_keymgmt_768_functions[];
+// extern const OSSL_DISPATCH kyber_keymgmt_1024_functions[];
+
+// extern const OSSL_DISPATCH kyber_encoder_functions[];
+// extern const OSSL_DISPATCH kyber_decoder_functions[];
+
+/* 移除重复定义的 PROV_CTX 结构体 */
+
+/* Provider Context 工具函数的实现 */
+OSSL_LIB_CTX *PROV_CTX_get0_libctx(const PROV_CTX *ctx)
+{
+    return ctx->libctx;
+}
 
 /* Provider 参数定义 */
 static const OSSL_PARAM provider_param_types[] = {
@@ -52,13 +62,43 @@ static int provider_get_params(void *provctx, OSSL_PARAM params[])
 }
 
 /* Provider 实现 */
-static const OSSL_ALGORITHM provider_ciphers[] = {
-    { "CAESAR", "provider=caesar", caesar_cipher_functions, "Caesar Cipher Implementation" },
+static const OSSL_ALGORITHM provider_keymgmt[] = {
+    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_keymgmt_512_functions, "Kyber Key Management Implementation" },
+    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_keymgmt_768_functions, "Kyber Key Management Implementation" },
+    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_keymgmt_1024_functions, "Kyber Key Management Implementation" },
     { NULL, NULL, NULL, NULL }
 };
 
-static const OSSL_ALGORITHM provider_keyexch[] = {
-    { "KYBER", "provider=kyber", kyber_kem_functions, "Kyber Key Exchange Implementation" },
+static const OSSL_ALGORITHM provider_encoders[] = {
+    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=PEM,structure=privatekeyinfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
+    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=DER,structure=privatekeyinfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
+    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=PEM,structure=privatekeyinfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
+    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=DER,structure=privatekeyinfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
+    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=PEM,structure=privatekeyinfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
+    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=DER,structure=privatekeyinfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
+    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=PEM,structure=SubjectPublicKeyInfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
+    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=DER,structure=SubjectPublicKeyInfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
+    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=PEM,structure=SubjectPublicKeyInfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
+    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=DER,structure=SubjectPublicKeyInfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
+    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=PEM,structure=SubjectPublicKeyInfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
+    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=DER,structure=SubjectPublicKeyInfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
+    { NULL, NULL, NULL, NULL }
+};
+
+static const OSSL_ALGORITHM provider_decoders[] = {
+    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,input=DER,structure=privatekeyinfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
+    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,input=DER,structure=privatekeyinfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
+    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,input=DER,structure=privatekeyinfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
+    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,input=DER,structure=SubjectPublicKeyInfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
+    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,input=DER,structure=SubjectPublicKeyInfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
+    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,input=DER,structure=SubjectPublicKeyInfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
+    { NULL, NULL, NULL, NULL }
+};
+
+static const OSSL_ALGORITHM provider_kems[] = {
+    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_kem_512_functions, "Kyber Kem"},
+    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_kem_768_functions, "Kyber Kem"},
+    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_kem_1024_functions, "Kyber Kem"},
     { NULL, NULL, NULL, NULL }
 };
 
@@ -70,10 +110,16 @@ static const OSSL_ALGORITHM *local_query(void *provctx, int operation_id,
 {
     *no_cache = 0;
     switch (operation_id) {
-    case OSSL_OP_CIPHER:
-        return provider_ciphers;
-    case OSSL_OP_KEYEXCH:
-        return provider_keyexch;
+        // case OSSL_OP_KEYEXCH:
+        // return provider_keyexch;
+        case OSSL_OP_KEYMGMT:
+            return provider_keymgmt;
+        case OSSL_OP_ENCODER:
+            return provider_encoders;
+        case OSSL_OP_DECODER:
+            return provider_decoders;
+        case OSSL_OP_KEM:
+            return provider_kems;
     }
     return NULL;
 }
@@ -84,6 +130,11 @@ static const OSSL_ALGORITHM *local_query(void *provctx, int operation_id,
 static void local_teardown(void *provctx)
 {
     PROV_CTX *ctx = (PROV_CTX *)provctx;
+    
+    /* 释放库上下文 */
+    if (ctx->libctx != NULL)
+        OSSL_LIB_CTX_free(ctx->libctx);
+    
     OPENSSL_free(ctx);
 }
 
@@ -94,6 +145,7 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
                       void **provctx)
 {
     PROV_CTX *ctx;
+    const OSSL_DISPATCH *orig_in = in;
 
     /* 创建provider上下文 */
     ctx = OPENSSL_malloc(sizeof(PROV_CTX));
@@ -101,6 +153,13 @@ int OSSL_provider_init(const OSSL_CORE_HANDLE *handle,
         return 0;
 
     ctx->handle = handle;
+    
+    /* 使用OSSL_LIB_CTX_new_child创建新的库上下文 */
+    ctx->libctx = OSSL_LIB_CTX_new_child(handle, orig_in);
+    if (ctx->libctx == NULL) {
+        OPENSSL_free(ctx);
+        return 0;
+    }
 
     /* 设置provider函数表 */
     static const OSSL_DISPATCH provider_functions[] = {

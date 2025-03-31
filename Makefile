@@ -2,79 +2,56 @@
 
 # 编译器和标志
 CC = gcc
-CFLAGS = -Wall -fPIC -I/usr/include/openssl
-LDFLAGS = -lcrypto
+CFLAGS = -Wall -fPIC -I/usr/include/openssl -g -DDEBUG
+LDFLAGS = -shared -L/root/projects/kyber/ref/lib -lpqcrystals_kyber512_ref -lpqcrystals_kyber768_ref -lpqcrystals_kyber1024_ref -lpqcrystals_fips202_ref -lcrypto
 
 # 目录定义
 SRC_DIR = .
 BUILD_DIR = _build
 OBJ_DIR = $(BUILD_DIR)/obj
 
+# 源文件
+SRC = $(wildcard implementations/keymgmt/*.c) \
+	  $(wildcard implementations/encoder/*.c) \
+	  $(wildcard implementations/decoder/*.c) \
+	  provider.c
+
 # 目标文件
-PROVIDER_OBJ = $(OBJ_DIR)/provider.o $(OBJ_DIR)/caesar.o $(OBJ_DIR)/kyber.o
-TEST_CAESAR_OBJ = $(OBJ_DIR)/test_caesar.o
-# TEST_KYBER_OBJ = $(OBJ_DIR)/test_kyber.o
+OBJ = $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRC))
 
 # 目标
-all: $(BUILD_DIR)/pqtls.so $(BUILD_DIR)/test_caesar # $(BUILD_DIR)/test_kyber
+TARGET = $(BUILD_DIR)/pqtls.so
+
+# 默认目标
+all: $(TARGET)
 
 # 创建构建目录
 $(BUILD_DIR) $(OBJ_DIR):
 	mkdir -p $@
 
-# 编译provider共享库
-$(BUILD_DIR)/pqtls.so: $(PROVIDER_OBJ) | $(BUILD_DIR)
-	$(CC) -shared -o $@ $^ $(LDFLAGS)
-
-# 编译测试程序
-$(BUILD_DIR)/test_caesar: $(TEST_CAESAR_OBJ) $(BUILD_DIR)/pqtls.so | $(BUILD_DIR)
+# 编译共享库
+$(TARGET): $(OBJ) | $(BUILD_DIR)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-$(BUILD_DIR)/test_kyber: $(TEST_KYBER_OBJ) $(BUILD_DIR)/pqtls.so | $(BUILD_DIR)
-	$(CC) -o $@ $^ $(LDFLAGS)
-
-# 编译.c文件为.o文件
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+# 编译规则
+$(OBJ_DIR)/%.o: %.c | $(OBJ_DIR)
+	@mkdir -p $(dir $@)  # 添加这行以确保目录存在
 	$(CC) $(CFLAGS) -c $< -o $@
-
-$(OBJ_DIR)/caesar.o: implementations/cipher/caesar.c | $(OBJ_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(OBJ_DIR)/kyber.o: implementations/kem/kyber.c | $(OBJ_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(OBJ_DIR)/test_caesar.o: test/test_caesar.c | $(OBJ_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(OBJ_DIR)/test_kyber.o: test/test_kyber.c | $(OBJ_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
-
-# 运行测试
-run-test: all
-	$(BUILD_DIR)/test_caesar
-
-# 运行Kyber测试
-run-test-kyber: all
-	$(BUILD_DIR)/test_kyber
 
 # 清理生成的文件
 clean:
 	rm -rf $(BUILD_DIR)
 
 # 安装provider到系统目录
-install: $(BUILD_DIR)/pqtls.so
-	mkdir -p /usr/local/lib64/ossl-modules
-	cp $(BUILD_DIR)/pqtls.so /usr/local/lib64/ossl-modules/pqtls.so
+install: $(TARGET)
+	@echo "Installing PQTLS provider..."
+	@mkdir -p /usr/local/lib64/ossl-modules
+	@install -m 0755 $(TARGET) /usr/local/lib64/ossl-modules/pqtls.so
+	@echo "Provider installed to /usr/local/lib64/ossl-modules/pqtls.so"
+	@echo "To use the provider, ensure your OpenSSL configuration includes it."
 
 # 卸载provider
 uninstall:
 	rm -f /usr/local/lib64/ossl-modules/pqtls.so
 
-# 依赖关系
-$(OBJ_DIR)/provider.o: provider.c implementations/include/implementations.h
-$(OBJ_DIR)/caesar.o: implementations/cipher/caesar.c implementations/cipher/caesar.h implementations/include/implementations.h
-$(OBJ_DIR)/kyber.o: implementations/kem/kyber.c implementations/kem/kyber.h implementations/include/implementations.h
-$(OBJ_DIR)/test_caesar.o: test/test_caesar.c
-$(OBJ_DIR)/test_kyber.o: test/test_kyber.c
-
-.PHONY: all clean install uninstall run-test run-test-kyber
+.PHONY: all clean install uninstall
