@@ -44,6 +44,9 @@ git clone https://github.com/sh4ngchen/provider-pqtls.git
 # 进入项目目录
 cd provider-pqtls
 
+# 编译安装kyber项目
+cd crypto/kyber/ref && make && make install && cd ../../..
+
 # 编译并安装
 make && make install
 ```
@@ -75,8 +78,8 @@ openssl pkey -provider default -provider pqtls -in kyber512.pem -pubout -out kyb
 
 ## 开发路线图
 
-- [√] 实现Kyber密钥管理(keymgmt)模块
-- [√] 实现Kyber密钥编码/解码模块
+- [x] 实现Kyber密钥管理(keymgmt)模块
+- [x] 实现Kyber密钥编码/解码模块
 - [ ] 实现Kyber密钥封装机制(KEM)
 - [ ] 实现Crystals-Dilithium后量子数字签名算法
 - [ ] 与TLS握手协议集成
