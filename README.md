@@ -44,7 +44,7 @@ git clone https://github.com/sh4ngchen/provider-pqtls.git
 # 进入项目目录
 cd provider-pqtls
 
-# 编译安装kyber项目
+# 编译安装kyber项目,支持avx2的可以自行修改
 cd crypto/kyber/ref && make && make install && cd ../../..
 
 # 编译并安装
@@ -53,34 +53,79 @@ make && make install
 
 ## 使用指南
 
+### 配置openssl.cnf
+
+```bash
+openssl version -d
+# OPENSSLDIR: "/usr/local/ssl"
+```
+
+修改`/OPENSSLDIR/openssl.cnf`
+```ini
+[openssl_init]
+providers = provider_sect
+
+[provider_sect]
+default = default_sect
+pqtls = pqtls_sect
+
+[default_sect]
+activate = 1
+
+[pqtls_sect]
+activate = 1
+module = /usr/local/lib64/ossl-modules/pqtls.so
+```
+
+不修改也可在运行命令时添加 `-provider default -provider pqtls` 选项
+
 ### Provider查询
 
 ```bash
 # 查询已加载的Provider
 openssl list -providers -provider pqtls
 
-# 查看Provider提供的密钥管理算法
-openssl list -key-managers -provider pqtls
+# 查看Provider提供的算法
+openssl list -key-managers | grep pqtls
+openssl list -encoders | grep pqtls
+openssl list -decoders | grep pqtls
+openssl list -kem-algorithms | grep pqtls
 ```
 
 ### Kyber密钥操作
 
 ```bash
-# 生成Kyber密钥对
-openssl genpkey -provider default -provider pqtls -algorithm KYBER512 -out kyber512.pem
+# 生成Kyber密钥对并输出公钥
+openssl genpkey -algorithm KYBER512 -out kyber512.pem -outpubkey kyber512.pub
+
+# 输出der格式
+openssl genpkey -algorithm KYBER512 -out kyber512.der -outform DER
 
 # 查看密钥信息
 目前不支持-text输出
 
 # 从密钥提取公钥
-openssl pkey -provider default -provider pqtls -in kyber512.pem -pubout -out kyber512.pub
+openssl pkey -in kyber512.pem -pubout -out kyber512.pub
+```
+
+### Kyber Kem
+
+```bash
+# 生成shared secret和cipher text
+openssl pkeyutl -encap -inkey kyber512.pub -pubin -secret kyber512.ss1 -out kyber512.ct
+
+# 使用私钥从cipher text提取 是shared secret
+openssl pkeyutl -decap -inkey kyber512.pem -in kyber512.ct -out kyber512.ss2
+
+# 查看shared secret
+cat kyber512.ss1 | od -tx1 && cat kyber512.ss2 | od -tx1
 ```
 
 ## 开发路线图
 
 - [x] 实现Kyber密钥管理(keymgmt)模块
 - [x] 实现Kyber密钥编码/解码模块
-- [ ] 实现Kyber密钥封装机制(KEM)
+- [x] 实现Kyber密钥封装机制(KEM)
 - [ ] 实现Crystals-Dilithium后量子数字签名算法
 - [ ] 与TLS握手协议集成
 - [ ] 进行性能测试与安全分析

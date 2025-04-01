@@ -12,15 +12,6 @@
 #include <openssl/core_dispatch.h>
 #include "implementations/include/implementations.h"
 
-// extern const OSSL_DISPATCH kyber_keymgmt_512_functions[];
-// extern const OSSL_DISPATCH kyber_keymgmt_768_functions[];
-// extern const OSSL_DISPATCH kyber_keymgmt_1024_functions[];
-
-// extern const OSSL_DISPATCH kyber_encoder_functions[];
-// extern const OSSL_DISPATCH kyber_decoder_functions[];
-
-/* 移除重复定义的 PROV_CTX 结构体 */
-
 /* Provider Context 工具函数的实现 */
 OSSL_LIB_CTX *PROV_CTX_get0_libctx(const PROV_CTX *ctx)
 {
@@ -97,8 +88,8 @@ static const OSSL_ALGORITHM provider_decoders[] = {
 
 static const OSSL_ALGORITHM provider_kems[] = {
     { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_kem_512_functions, "Kyber Kem"},
-    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_kem_768_functions, "Kyber Kem"},
-    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_kem_1024_functions, "Kyber Kem"},
+    // { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_kem_768_functions, "Kyber Kem"},
+    // { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_kem_1024_functions, "Kyber Kem"},
     { NULL, NULL, NULL, NULL }
 };
 

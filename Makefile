@@ -14,6 +14,7 @@ OBJ_DIR = $(BUILD_DIR)/obj
 SRC = $(wildcard implementations/keymgmt/*.c) \
 	  $(wildcard implementations/encoder/*.c) \
 	  $(wildcard implementations/decoder/*.c) \
+	  $(wildcard implementations/kem/*.c) \
 	  provider.c
 
 # 目标文件
@@ -48,6 +49,7 @@ install: $(TARGET)
 	@mkdir -p /usr/local/lib64/ossl-modules
 	@install -m 0755 $(TARGET) /usr/local/lib64/ossl-modules/pqtls.so
 	@echo "Provider installed to /usr/local/lib64/ossl-modules/pqtls.so"
+	@echo "If you use system OpenSSL, you may need change the install path to /usr/lib/x86_64-linux-gnu/ossl-modules/"
 	@echo "To use the provider, ensure your OpenSSL configuration includes it."
 
 # 卸载provider

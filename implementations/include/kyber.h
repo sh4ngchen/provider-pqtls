@@ -16,6 +16,12 @@ typedef struct {
     int has_private;
 } KYBER_KEY;
 
+/* KEM上下文结构 */
+typedef struct {
+    PROV_CTX *provctx;
+    KYBER_KEY *pkey;         /* 当前KEM使用的密钥 */
+} KYBER_KEM_CTX;
+
 /* KYBER_GEN_CTX 结构体定义 */
 typedef struct {
     int selection;

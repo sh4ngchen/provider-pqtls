@@ -39,13 +39,24 @@ static void *kyber1024_newdata(void *provctx)
 static OSSL_FUNC_keymgmt_free_fn kyber1024_freedata;
 static void kyber1024_freedata(void *keydata)
 {
-    KYBER_KEY *key = (KYBER_KEY *)keydata;
-    if (key != NULL) {
-        // 释放动态分配的内存
-        OPENSSL_free(key->public_key);
-        OPENSSL_free(key->secret_key);
-        OPENSSL_free(key);
+    if (keydata == NULL) {
+        return;  // 提前返回，避免无效操作
     }
+    
+    KYBER_KEY *key = (KYBER_KEY *)keydata;
+    
+    // 检查指针有效性再释放
+    if (key->public_key != NULL) {
+        OPENSSL_free(key->public_key);
+        key->public_key = NULL;  // 防止重复释放
+    }
+    
+    if (key->secret_key != NULL) {
+        OPENSSL_free(key->secret_key);
+        key->secret_key = NULL;  // 防止重复释放
+    }
+    
+    OPENSSL_free(key);
 }
 
 static OSSL_FUNC_keymgmt_has_fn kyber1024_has;
