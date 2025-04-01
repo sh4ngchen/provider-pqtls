@@ -22,9 +22,10 @@ OBJ = $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRC))
 
 # 目标
 TARGET = $(BUILD_DIR)/pqtls.so
+RANDOMBYTES_TARGET = $(BUILD_DIR)/randombytes.so
 
 # 默认目标
-all: $(TARGET)
+all: $(TARGET) $(RANDOMBYTES_TARGET)
 
 # 创建构建目录
 $(BUILD_DIR) $(OBJ_DIR):
@@ -33,6 +34,10 @@ $(BUILD_DIR) $(OBJ_DIR):
 # 编译共享库
 $(TARGET): $(OBJ) | $(BUILD_DIR)
 	$(CC) -o $@ $^ $(LDFLAGS)
+
+# 编译randombytes共享库
+$(RANDOMBYTES_TARGET): randombytes/randombytes.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -shared -o $@ $<
 
 # 编译规则
 $(OBJ_DIR)/%.o: %.c | $(OBJ_DIR)
@@ -44,16 +49,22 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 # 安装provider到系统目录
-install: $(TARGET)
+install: $(TARGET) $(RANDOMBYTES_TARGET)
 	@echo "Installing PQTLS provider..."
 	@mkdir -p /usr/local/lib64/ossl-modules
 	@install -m 0755 $(TARGET) /usr/local/lib64/ossl-modules/pqtls.so
 	@echo "Provider installed to /usr/local/lib64/ossl-modules/pqtls.so"
+	@echo "Installing randombytes shared library..."
+	@install -m 0755 $(RANDOMBYTES_TARGET) /usr/local/lib/librandombytes.so
+	@echo "randombytes.so installed to /usr/local/lib/librandombytes.so"
+	@ldconfig
 	@echo "If you use system OpenSSL, you may need change the install path to /usr/lib/x86_64-linux-gnu/ossl-modules/"
 	@echo "To use the provider, ensure your OpenSSL configuration includes it."
 
 # 卸载provider
 uninstall:
 	rm -f /usr/local/lib64/ossl-modules/pqtls.so
+	rm -f /usr/local/lib/randombytes.so
+	ldconfig
 
 .PHONY: all clean install uninstall
