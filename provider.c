@@ -11,6 +11,7 @@
 #include <openssl/params.h>
 #include <openssl/core_dispatch.h>
 #include "implementations/include/implementations.h"
+#include "provider.h"
 
 /* Provider Context 工具函数的实现 */
 OSSL_LIB_CTX *PROV_CTX_get0_libctx(const PROV_CTX *ctx)
@@ -54,42 +55,75 @@ static int provider_get_params(void *provctx, OSSL_PARAM params[])
 
 /* Provider 实现 */
 static const OSSL_ALGORITHM provider_keymgmt[] = {
-    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_keymgmt_512_functions, "Kyber Key Management Implementation" },
-    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_keymgmt_768_functions, "Kyber Key Management Implementation" },
-    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_keymgmt_1024_functions, "Kyber Key Management Implementation" },
+    // Kyber:1.3.6.1.4.1.2.267.8
+    { "KYBER512:1.3.6.1.4.1.2.267.8", "provider=pqtls", kyber512_keymgmt_functions, "Kyber Key Management Implementation" },
+    { "KYBER768:1.3.6.1.4.1.2.267.8", "provider=pqtls", kyber768_keymgmt_functions, "Kyber Key Management Implementation" },
+    { "KYBER1024:1.3.6.1.4.1.2.267.8", "provider=pqtls", kyber1024_keymgmt_functions, "Kyber Key Management Implementation" },
+    // Dilithium:1.3.6.1.4.1.2.267.7
+    { "DILITHIUM2:1.3.6.1.4.1.2.267.7", "provider=pqtls", dilithium2_keymgmt_functions, "Dilithium Key Management Implementation" },
+    { "DILITHIUM3:1.3.6.1.4.1.2.267.7", "provider=pqtls", dilithium3_keymgmt_functions, "Dilithium Key Management Implementation" },
+    { "DILITHIUM5:1.3.6.1.4.1.2.267.7", "provider=pqtls", dilithium5_keymgmt_functions, "Dilithium Key Management Implementation" },
     { NULL, NULL, NULL, NULL }
 };
 
 static const OSSL_ALGORITHM provider_encoders[] = {
-    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=PEM,structure=privatekeyinfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
-    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=DER,structure=privatekeyinfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
-    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=PEM,structure=privatekeyinfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
-    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=DER,structure=privatekeyinfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
-    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=PEM,structure=privatekeyinfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
-    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=DER,structure=privatekeyinfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
-    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=PEM,structure=SubjectPublicKeyInfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
-    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=DER,structure=SubjectPublicKeyInfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
-    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=PEM,structure=SubjectPublicKeyInfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
-    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=DER,structure=SubjectPublicKeyInfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
-    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=PEM,structure=SubjectPublicKeyInfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
-    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,output=DER,structure=SubjectPublicKeyInfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
+    // Kyber:1.3.6.1.4.1.2.267.8
+    { "KYBER512:1.3.6.1.4.1.2.267.8", "provider=pqtls,output=PEM,structure=privatekeyinfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
+    { "KYBER512:1.3.6.1.4.1.2.267.8", "provider=pqtls,output=DER,structure=privatekeyinfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
+    { "KYBER512:1.3.6.1.4.1.2.267.8", "provider=pqtls,output=PEM,structure=SubjectPublicKeyInfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
+    { "KYBER512:1.3.6.1.4.1.2.267.8", "provider=pqtls,output=DER,structure=SubjectPublicKeyInfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
+    { "KYBER768:1.3.6.1.4.1.2.267.8", "provider=pqtls,output=PEM,structure=privatekeyinfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
+    { "KYBER768:1.3.6.1.4.1.2.267.8", "provider=pqtls,output=DER,structure=privatekeyinfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
+    { "KYBER768:1.3.6.1.4.1.2.267.8", "provider=pqtls,output=PEM,structure=SubjectPublicKeyInfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
+    { "KYBER768:1.3.6.1.4.1.2.267.8", "provider=pqtls,output=DER,structure=SubjectPublicKeyInfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
+    { "KYBER1024:1.3.6.1.4.1.2.267.8", "provider=pqtls,output=PEM,structure=privatekeyinfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
+    { "KYBER1024:1.3.6.1.4.1.2.267.8", "provider=pqtls,output=DER,structure=privatekeyinfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
+    { "KYBER1024:1.3.6.1.4.1.2.267.8", "provider=pqtls,output=PEM,structure=SubjectPublicKeyInfo", kyber_encoder_pem_functions, "Kyber Key PEM Encoder" },
+    { "KYBER1024:1.3.6.1.4.1.2.267.8", "provider=pqtls,output=DER,structure=SubjectPublicKeyInfo", kyber_encoder_der_functions, "Kyber Key DER Encoder" },
+    // Dilithium:1.3.6.1.4.1.2.267.7
+    { "DILITHIUM2:1.3.6.1.4.1.2.267.7", "provider=pqtls,output=PEM,structure=privatekeyinfo", dilithium_encoder_pem_functions, "Kyber Key PEM Encoder"},
+    { "DILITHIUM2:1.3.6.1.4.1.2.267.7", "provider=pqtls,output=DER,structure=privatekeyinfo", dilithium_encoder_der_functions, "Kyber Key PEM Encoder"},
+    { "DILITHIUM2:1.3.6.1.4.1.2.267.7", "provider=pqtls,output=PEM,structure=SubjectPublicKeyInfo", dilithium_encoder_pem_functions, "Kyber Key PEM Encoder"},
+    { "DILITHIUM2:1.3.6.1.4.1.2.267.7", "provider=pqtls,output=DER,structure=SubjectPublicKeyInfo", dilithium_encoder_der_functions, "Kyber Key PEM Encoder"},
+    { "DILITHIUM3:1.3.6.1.4.1.2.267.7", "provider=pqtls,output=PEM,structure=privatekeyinfo", dilithium_encoder_pem_functions, "Kyber Key PEM Encoder"},
+    { "DILITHIUM3:1.3.6.1.4.1.2.267.7", "provider=pqtls,output=DER,structure=privatekeyinfo", dilithium_encoder_der_functions, "Kyber Key PEM Encoder"},
+    { "DILITHIUM3:1.3.6.1.4.1.2.267.7", "provider=pqtls,output=PEM,structure=SubjectPublicKeyInfo", dilithium_encoder_pem_functions, "Kyber Key PEM Encoder"},
+    { "DILITHIUM3:1.3.6.1.4.1.2.267.7", "provider=pqtls,output=DER,structure=SubjectPublicKeyInfo", dilithium_encoder_der_functions, "Kyber Key PEM Encoder"},
+    { "DILITHIUM5:1.3.6.1.4.1.2.267.7", "provider=pqtls,output=PEM,structure=privatekeyinfo", dilithium_encoder_pem_functions, "Kyber Key PEM Encoder"},
+    { "DILITHIUM5:1.3.6.1.4.1.2.267.7", "provider=pqtls,output=DER,structure=privatekeyinfo", dilithium_encoder_der_functions, "Kyber Key PEM Encoder"},
+    { "DILITHIUM5:1.3.6.1.4.1.2.267.7", "provider=pqtls,output=PEM,structure=SubjectPublicKeyInfo", dilithium_encoder_pem_functions, "Kyber Key PEM Encoder"},
+    { "DILITHIUM5:1.3.6.1.4.1.2.267.7", "provider=pqtls,output=DER,structure=SubjectPublicKeyInfo", dilithium_encoder_der_functions, "Kyber Key PEM Encoder"},
+    
     { NULL, NULL, NULL, NULL }
 };
 
 static const OSSL_ALGORITHM provider_decoders[] = {
-    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,input=DER,structure=privatekeyinfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
-    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,input=DER,structure=privatekeyinfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
-    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,input=DER,structure=privatekeyinfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
-    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,input=DER,structure=SubjectPublicKeyInfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
-    { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,input=DER,structure=SubjectPublicKeyInfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
-    { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls,input=DER,structure=SubjectPublicKeyInfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
+    { "KYBER512:1.3.6.1.4.1.2.267.8", "provider=pqtls,input=DER,structure=privatekeyinfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
+    { "KYBER512:1.3.6.1.4.1.2.267.8", "provider=pqtls,input=DER,structure=SubjectPublicKeyInfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
+    { "KYBER768:1.3.6.1.4.1.2.267.8", "provider=pqtls,input=DER,structure=privatekeyinfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
+    { "KYBER768:1.3.6.1.4.1.2.267.8", "provider=pqtls,input=DER,structure=SubjectPublicKeyInfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
+    { "KYBER1024:1.3.6.1.4.1.2.267.8", "provider=pqtls,input=DER,structure=privatekeyinfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
+    { "KYBER1024:1.3.6.1.4.1.2.267.8", "provider=pqtls,input=DER,structure=SubjectPublicKeyInfo", kyber_decoder_der_functions, "Kyber Key DER Decoder" },
+    // 添加 Dilithium 解码器
+    { "DILITHIUM2:1.3.6.1.4.1.2.267.7", "provider=pqtls,input=DER,structure=privatekeyinfo", dilithium_decoder_der_functions, "Dilithium Key DER Decoder" },
+    { "DILITHIUM2:1.3.6.1.4.1.2.267.7", "provider=pqtls,input=DER,structure=SubjectPublicKeyInfo", dilithium_decoder_der_functions, "Dilithium Key DER Decoder" },
+    { "DILITHIUM3:1.3.6.1.4.1.2.267.7", "provider=pqtls,input=DER,structure=privatekeyinfo", dilithium_decoder_der_functions, "Dilithium Key DER Decoder" },
+    { "DILITHIUM3:1.3.6.1.4.1.2.267.7", "provider=pqtls,input=DER,structure=SubjectPublicKeyInfo", dilithium_decoder_der_functions, "Dilithium Key DER Decoder" },
+    { "DILITHIUM5:1.3.6.1.4.1.2.267.7", "provider=pqtls,input=DER,structure=privatekeyinfo", dilithium_decoder_der_functions, "Dilithium Key DER Decoder" },
+    { "DILITHIUM5:1.3.6.1.4.1.2.267.7", "provider=pqtls,input=DER,structure=SubjectPublicKeyInfo", dilithium_decoder_der_functions, "Dilithium Key DER Decoder" },
+    { NULL, NULL, NULL, NULL }
+};
+
+// 添加 Dilithium 签名算法
+static const OSSL_ALGORITHM provider_signatures[] = {
+    //{ "DILITHIUM2:1.3.6.1.4.1.2.267.7", "provider=pqtls", dilithium2_signature_functions, "Dilithium Signature Implementation" },
     { NULL, NULL, NULL, NULL }
 };
 
 static const OSSL_ALGORITHM provider_kems[] = {
-    { "KYBER512:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_kem_512_functions, "Kyber Kem"},
-    // { "KYBER768:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_kem_768_functions, "Kyber Kem"},
-    // { "KYBER1024:1.3.6.1.4.1.54392.5.1812", "provider=pqtls", kyber_kem_1024_functions, "Kyber Kem"},
+    { "KYBER512:1.3.6.1.4.1.2.267.8", "provider=pqtls", kyber512_kem_functions, "Kyber Kem"},
+    { "KYBER768:1.3.6.1.4.1.2.267.8", "provider=pqtls", kyber768_kem_functions, "Kyber Kem"},
+    { "KYBER1024:1.3.6.1.4.1.2.267.8", "provider=pqtls", kyber1024_kem_functions, "Kyber Kem"},
     { NULL, NULL, NULL, NULL }
 };
 
@@ -101,8 +135,6 @@ static const OSSL_ALGORITHM *local_query(void *provctx, int operation_id,
 {
     *no_cache = 0;
     switch (operation_id) {
-        // case OSSL_OP_KEYEXCH:
-        // return provider_keyexch;
         case OSSL_OP_KEYMGMT:
             return provider_keymgmt;
         case OSSL_OP_ENCODER:
@@ -111,6 +143,8 @@ static const OSSL_ALGORITHM *local_query(void *provctx, int operation_id,
             return provider_decoders;
         case OSSL_OP_KEM:
             return provider_kems;
+        case OSSL_OP_SIGNATURE:
+            return provider_signatures;
     }
     return NULL;
 }

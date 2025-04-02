@@ -1,26 +1,27 @@
 #include <openssl/core.h>
 #include <openssl/types.h>
 
-/* Provider Context 相关声明 */
-typedef struct prov_ctx_st {
-    const OSSL_CORE_HANDLE *handle;  /* OpenSSL核心句柄 */
-    OSSL_LIB_CTX *libctx;            /* 库上下文 */
-} PROV_CTX;
-
-/* Provider Context 工具函数 */
-OSSL_LIB_CTX *PROV_CTX_get0_libctx(const PROV_CTX *ctx);
-
 /* Key Management */
-extern const OSSL_DISPATCH kyber_keymgmt_512_functions[];
-extern const OSSL_DISPATCH kyber_keymgmt_768_functions[];
-extern const OSSL_DISPATCH kyber_keymgmt_1024_functions[];
+// Kyber
+extern const OSSL_DISPATCH kyber512_keymgmt_functions[];
+extern const OSSL_DISPATCH kyber768_keymgmt_functions[];
+extern const OSSL_DISPATCH kyber1024_keymgmt_functions[];
+// Dilithium
+extern const OSSL_DISPATCH dilithium2_keymgmt_functions[];
+extern const OSSL_DISPATCH dilithium3_keymgmt_functions[];
+extern const OSSL_DISPATCH dilithium5_keymgmt_functions[];
 
 /* Encoder & Decoder */
+// Kyber
 extern const OSSL_DISPATCH kyber_encoder_pem_functions[];
 extern const OSSL_DISPATCH kyber_encoder_der_functions[];
 extern const OSSL_DISPATCH kyber_decoder_der_functions[];
+// Dilithium
+extern const OSSL_DISPATCH dilithium_encoder_pem_functions[];
+extern const OSSL_DISPATCH dilithium_encoder_der_functions[];
+extern const OSSL_DISPATCH dilithium_decoder_der_functions[];
 
 /* KEM */
-extern const OSSL_DISPATCH kyber_kem_512_functions[];
-extern const OSSL_DISPATCH kyber_kem_768_functions[];
-extern const OSSL_DISPATCH kyber_kem_1024_functions[];
+extern const OSSL_DISPATCH kyber512_kem_functions[];
+extern const OSSL_DISPATCH kyber768_kem_functions[];
+extern const OSSL_DISPATCH kyber1024_kem_functions[];

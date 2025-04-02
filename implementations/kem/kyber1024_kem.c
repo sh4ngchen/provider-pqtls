@@ -191,7 +191,7 @@ static int kyber1024_kem_set_ctx_params(void *ctx, const OSSL_PARAM params[])
 }
 
 /* Kyber-1024 KEM函数分发表 */
-const OSSL_DISPATCH kyber_kem_1024_functions[] = {
+const OSSL_DISPATCH kyber1024_kem_functions[] = {
     { OSSL_FUNC_KEM_NEWCTX, (void (*)(void))kyber1024_kem_newctx },
     { OSSL_FUNC_KEM_FREECTX, (void (*)(void))kyber1024_kem_freectx },
     { OSSL_FUNC_KEM_DUPCTX, (void (*)(void))kyber1024_kem_dupctx },
