@@ -9,27 +9,27 @@
 #include <openssl/objects.h>
 #include <openssl/asn1.h>
 #include <openssl/asn1t.h>
-#include "../include/implementations.h"
-#include "../include/dilithium.h"
+#include "../include/impl.h"
+#include "../include/kyber.h"
 
-/* 注册Dilithium OID */
-static int register_dilithium_oid(void) {
+/* 注册Kyber OID */
+static int register_kyber_oid(void) {
     static int initialized = 0;
     if (!initialized) {
-        int nid = OBJ_create(OID_dilithium, "dilithium", "Dilithium Post-Quantum Signature Algorithm");
+        int nid = OBJ_create(OID_kyber, "kyber", "Kyber Post-Quantum Algorithm");
         if (nid != NID_undef) {
             initialized = 1;
             return nid;
         }
     }
     /* 如果已经注册，获取现有的NID */
-    return OBJ_txt2nid("dilithium");
+    return OBJ_txt2nid("kyber");
 }
 
 /* 1. 创建 encoder 上下文 */
-static OSSL_FUNC_encoder_newctx_fn dilithium_encoder_newctx;
-static void *dilithium_encoder_newctx(void *provctx) {
-    DILITHIUM_ENCODER_CTX *ctx = OPENSSL_zalloc(sizeof(*ctx));
+static OSSL_FUNC_encoder_newctx_fn kyber_encoder_newctx;
+static void *kyber_encoder_newctx(void *provctx) {
+    KYBER_ENCODER_CTX *ctx = OPENSSL_zalloc(sizeof(*ctx));
     if (!ctx) {
         return NULL;
     }
@@ -41,48 +41,48 @@ static void *dilithium_encoder_newctx(void *provctx) {
 }
 
 /* 2. 释放 encoder 上下文 */
-static OSSL_FUNC_encoder_freectx_fn dilithium_encoder_freectx;
-static void dilithium_encoder_freectx(void *ctx) {
+static OSSL_FUNC_encoder_freectx_fn kyber_encoder_freectx;
+static void kyber_encoder_freectx(void *ctx) {
     OPENSSL_free(ctx);
 }
 
 /* 3. 确定支持的 selection */
-static OSSL_FUNC_encoder_does_selection_fn dilithium_does_selection;
-static int dilithium_does_selection(void *ctx, int selection) {
+static OSSL_FUNC_encoder_does_selection_fn kyber_does_selection;
+static int kyber_does_selection(void *ctx, int selection) {
     return (selection & (OSSL_KEYMGMT_SELECT_PRIVATE_KEY |
                          OSSL_KEYMGMT_SELECT_PUBLIC_KEY |
                          OSSL_KEYMGMT_SELECT_KEYPAIR));
 }
 
-/* 将DILITHIUM_KEY转换为DER格式 - 保存私钥和公钥 */
-static int dilithium_key_to_der(void *ctx, const DILITHIUM_KEY *dilithium_key, unsigned char **der) {
-    DILITHIUM_ENCODER_CTX *enc_ctx = ctx;
+/* 将KYBER_KEY转换为DER格式 - 保存私钥和公钥 */
+static int kyber_key_to_der(void *ctx, const KYBER_KEY *kyber_key, unsigned char **der) {
+    KYBER_ENCODER_CTX *enc_ctx = ctx;
     ASN1_OCTET_STRING *oct = NULL;
     unsigned char *buf = NULL;
     size_t buflen;
     int derlen = -1;
     
-    if (!dilithium_key || !der) {
+    if (!kyber_key || !der) {
         return -1;
     }
 
     if (enc_ctx->only_pub) {
-        buflen = dilithium_key->public_key_len;
+        buflen = kyber_key->public_key_len;
         buf = OPENSSL_secure_malloc(buflen);
         if (buf == NULL) {
             ERR_raise(ERR_LIB_USER, ERR_R_MALLOC_FAILURE);
             return -1;
         }
-        memcpy(buf, dilithium_key->public_key, buflen);
+        memcpy(buf, kyber_key->public_key, buflen);
     } else {
-        buflen = dilithium_key->secret_key_len + dilithium_key->public_key_len;
+        buflen = kyber_key->secret_key_len + kyber_key->public_key_len;
         buf = OPENSSL_secure_malloc(buflen);
         if (buf == NULL) {
             ERR_raise(ERR_LIB_USER, ERR_R_MALLOC_FAILURE);
             return -1;
         }
-        memcpy(buf, dilithium_key->secret_key, dilithium_key->secret_key_len);
-        memcpy(buf + dilithium_key->secret_key_len, dilithium_key->public_key, dilithium_key->public_key_len);
+        memcpy(buf, kyber_key->secret_key, kyber_key->secret_key_len);
+        memcpy(buf + kyber_key->secret_key_len, kyber_key->public_key, kyber_key->public_key_len);
     }
     
     /* 创建ASN1_OCTET_STRING */
@@ -113,15 +113,15 @@ static int dilithium_key_to_der(void *ctx, const DILITHIUM_KEY *dilithium_key, u
 }
 
 /* 将密钥写入PKCS8_PRIV_KEY_INFO结构体 */
-static PKCS8_PRIV_KEY_INFO *dilithium_key_to_pkcs8(void *ctx, const DILITHIUM_KEY *dilithium_key) {
-    DILITHIUM_ENCODER_CTX *enc_ctx = ctx;
+static PKCS8_PRIV_KEY_INFO *kyber_key_to_pkcs8(void *ctx, const KYBER_KEY *kyber_key) {
+    KYBER_ENCODER_CTX *enc_ctx = ctx;
 
-    if (!dilithium_key) {
+    if (!kyber_key) {
         return NULL;
     }
 
-    /* 获取或注册Dilithium的OID */
-    int nid = register_dilithium_oid();
+    /* 获取或注册Kyber的OID */
+    int nid = register_kyber_oid();
     if (nid == NID_undef) {
         /* 回退方案：使用ed25519的OID */
         nid = NID_ED25519;
@@ -133,7 +133,7 @@ static PKCS8_PRIV_KEY_INFO *dilithium_key_to_pkcs8(void *ctx, const DILITHIUM_KE
     }
     
     unsigned char *der = NULL;
-    int derlen = dilithium_key_to_der(enc_ctx, dilithium_key, &der);
+    int derlen = kyber_key_to_der(enc_ctx, kyber_key, &der);
     if (derlen <= 0) {
         PKCS8_PRIV_KEY_INFO_free(p8info);
         return NULL;
@@ -148,18 +148,17 @@ static PKCS8_PRIV_KEY_INFO *dilithium_key_to_pkcs8(void *ctx, const DILITHIUM_KE
     return p8info;
 }
 
-/* 将DILITHIUM_KEY转换为X509_PUBKEY结构体 */
-static X509_PUBKEY *dilithium_key_to_x509_pubkey(void *ctx, const DILITHIUM_KEY *dilithium_key) {
-    DILITHIUM_ENCODER_CTX *enc_ctx = ctx;
+/* 将KYBER_KEY转换为X509_PUBKEY结构体 */
+static X509_PUBKEY *kyber_key_to_x509_pubkey(void *ctx, const KYBER_KEY *kyber_key) {
+    KYBER_ENCODER_CTX *enc_ctx = ctx;
     X509_PUBKEY *pubkey = NULL;
     int derlen;
     unsigned char *der = NULL;
-    
-    if (!dilithium_key || !dilithium_key->public_key) {
+    if (!kyber_key || !kyber_key->has_public) {
         return NULL;
     }
 
-    int nid = register_dilithium_oid();
+    int nid = register_kyber_oid();
     if (nid == NID_undef) {
         return NULL;
     }
@@ -167,7 +166,7 @@ static X509_PUBKEY *dilithium_key_to_x509_pubkey(void *ctx, const DILITHIUM_KEY 
     /* 确保仅处理公钥 */
     enc_ctx->only_pub = 1;
 
-    if (((pubkey = X509_PUBKEY_new()) == NULL) || (derlen = dilithium_key_to_der(enc_ctx, dilithium_key, &der)) <= 0 ||
+    if (((pubkey = X509_PUBKEY_new()) == NULL) || (derlen = kyber_key_to_der(enc_ctx, kyber_key, &der)) <= 0 ||
         !X509_PUBKEY_set0_param(pubkey, OBJ_nid2obj(nid), V_ASN1_NULL, NULL, der, derlen)) {
         OPENSSL_free(der);
         X509_PUBKEY_free(pubkey);
@@ -179,10 +178,10 @@ static X509_PUBKEY *dilithium_key_to_x509_pubkey(void *ctx, const DILITHIUM_KEY 
 }
 
 /* 4. 编码密钥 (PEM格式) */
-static OSSL_FUNC_encoder_encode_fn dilithium_encode_pem;
-static int dilithium_encode_pem(void *ctx, OSSL_CORE_BIO *out, const void *keydata, const OSSL_PARAM obj_abstract[],
+static OSSL_FUNC_encoder_encode_fn kyber_encode_pem;
+static int kyber_encode_pem(void *ctx, OSSL_CORE_BIO *out, const void *keydata, const OSSL_PARAM obj_abstract[],
                         int selection, OSSL_PASSPHRASE_CALLBACK *cb, void *cbarg) {
-    DILITHIUM_ENCODER_CTX *enc_ctx = ctx;
+    KYBER_ENCODER_CTX *enc_ctx = ctx;
     
     if (!keydata || !out) {
         return 0;
@@ -193,12 +192,12 @@ static int dilithium_encode_pem(void *ctx, OSSL_CORE_BIO *out, const void *keyda
         return 0;
     }
 
-    const DILITHIUM_KEY *dilithium_key = keydata;
+    const KYBER_KEY *kyber_key = keydata;
 
     /* PEM 格式输出 */
     if (selection & OSSL_KEYMGMT_SELECT_PRIVATE_KEY) {
         enc_ctx->only_pub = 0;
-        PKCS8_PRIV_KEY_INFO *p8info = dilithium_key_to_pkcs8(enc_ctx, dilithium_key);
+        PKCS8_PRIV_KEY_INFO *p8info = kyber_key_to_pkcs8(enc_ctx, kyber_key);
         if (!p8info) {
             BIO_free(bio);
             return 0;
@@ -213,7 +212,7 @@ static int dilithium_encode_pem(void *ctx, OSSL_CORE_BIO *out, const void *keyda
         PKCS8_PRIV_KEY_INFO_free(p8info);
     } else if (selection & OSSL_KEYMGMT_SELECT_PUBLIC_KEY) {
         enc_ctx->only_pub = 1;
-        X509_PUBKEY *pubkey = dilithium_key_to_x509_pubkey(enc_ctx, dilithium_key);
+        X509_PUBKEY *pubkey = kyber_key_to_x509_pubkey(enc_ctx, kyber_key);
         if (!pubkey) {
             BIO_free(bio);
             return 0;
@@ -233,10 +232,10 @@ static int dilithium_encode_pem(void *ctx, OSSL_CORE_BIO *out, const void *keyda
 }
 
 /* 4. 编码密钥 (DER格式) */
-static OSSL_FUNC_encoder_encode_fn dilithium_encode_der;
-static int dilithium_encode_der(void *ctx, OSSL_CORE_BIO *out, const void *keydata, const OSSL_PARAM obj_abstract[],
+static OSSL_FUNC_encoder_encode_fn kyber_encode_der;
+static int kyber_encode_der(void *ctx, OSSL_CORE_BIO *out, const void *keydata, const OSSL_PARAM obj_abstract[],
                         int selection, OSSL_PASSPHRASE_CALLBACK *cb, void *cbarg) {
-    DILITHIUM_ENCODER_CTX *enc_ctx = ctx;
+    KYBER_ENCODER_CTX *enc_ctx = ctx;
     
     if (!keydata || !out) {
         return 0;
@@ -247,12 +246,12 @@ static int dilithium_encode_der(void *ctx, OSSL_CORE_BIO *out, const void *keyda
         return 0;
     }
 
-    const DILITHIUM_KEY *dilithium_key = keydata;
+    const KYBER_KEY *kyber_key = keydata;
 
     /* DER 格式输出 */
     if (selection & OSSL_KEYMGMT_SELECT_PRIVATE_KEY) {
         enc_ctx->only_pub = 0;
-        PKCS8_PRIV_KEY_INFO *p8info = dilithium_key_to_pkcs8(enc_ctx, dilithium_key);
+        PKCS8_PRIV_KEY_INFO *p8info = kyber_key_to_pkcs8(enc_ctx, kyber_key);
         if (!p8info) {
             BIO_free(bio);
             return 0;
@@ -261,7 +260,7 @@ static int dilithium_encode_der(void *ctx, OSSL_CORE_BIO *out, const void *keyda
         PKCS8_PRIV_KEY_INFO_free(p8info);
     } else if (selection & OSSL_KEYMGMT_SELECT_PUBLIC_KEY) {
         enc_ctx->only_pub = 1;
-        X509_PUBKEY *pubkey = dilithium_key_to_x509_pubkey(enc_ctx, dilithium_key);
+        X509_PUBKEY *pubkey = kyber_key_to_x509_pubkey(enc_ctx, kyber_key);
         if (!pubkey) {
             BIO_free(bio);
             return 0;
@@ -281,19 +280,19 @@ static int dilithium_encode_der(void *ctx, OSSL_CORE_BIO *out, const void *keyda
 }
 
 /* 5. PEM encoder 方法表 */
-const OSSL_DISPATCH dilithium_encoder_pem_functions[] = {
-    { OSSL_FUNC_ENCODER_NEWCTX, (void (*)(void))dilithium_encoder_newctx },
-    { OSSL_FUNC_ENCODER_FREECTX, (void (*)(void))dilithium_encoder_freectx },
-    { OSSL_FUNC_ENCODER_DOES_SELECTION, (void (*)(void))dilithium_does_selection },
-    { OSSL_FUNC_ENCODER_ENCODE, (void (*)(void))dilithium_encode_pem },
+const OSSL_DISPATCH kyber_encoder_pem_functions[] = {
+    { OSSL_FUNC_ENCODER_NEWCTX, (void (*)(void))kyber_encoder_newctx },
+    { OSSL_FUNC_ENCODER_FREECTX, (void (*)(void))kyber_encoder_freectx },
+    { OSSL_FUNC_ENCODER_DOES_SELECTION, (void (*)(void))kyber_does_selection },
+    { OSSL_FUNC_ENCODER_ENCODE, (void (*)(void))kyber_encode_pem },
     { 0, NULL }
 };
 
 /* 6. DER encoder 方法表 */
-const OSSL_DISPATCH dilithium_encoder_der_functions[] = {
-    { OSSL_FUNC_ENCODER_NEWCTX, (void (*)(void))dilithium_encoder_newctx },
-    { OSSL_FUNC_ENCODER_FREECTX, (void (*)(void))dilithium_encoder_freectx },
-    { OSSL_FUNC_ENCODER_DOES_SELECTION, (void (*)(void))dilithium_does_selection },
-    { OSSL_FUNC_ENCODER_ENCODE, (void (*)(void))dilithium_encode_der },
+const OSSL_DISPATCH kyber_encoder_der_functions[] = {
+    { OSSL_FUNC_ENCODER_NEWCTX, (void (*)(void))kyber_encoder_newctx },
+    { OSSL_FUNC_ENCODER_FREECTX, (void (*)(void))kyber_encoder_freectx },
+    { OSSL_FUNC_ENCODER_DOES_SELECTION, (void (*)(void))kyber_does_selection },
+    { OSSL_FUNC_ENCODER_ENCODE, (void (*)(void))kyber_encode_der },
     { 0, NULL }
 };

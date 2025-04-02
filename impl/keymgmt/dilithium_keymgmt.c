@@ -4,7 +4,7 @@
 #include <openssl/proverr.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
-#include "../include/implementations.h"
+#include "../include/impl.h"
 #include "../include/dilithium.h"
 
 /* 创建一个新的 Dilithium 密钥结构，根据版本设置不同参数 */

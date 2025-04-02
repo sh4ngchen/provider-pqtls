@@ -10,7 +10,7 @@
 #include <openssl/asn1t.h>
 #include <openssl/objects.h>
 #include <openssl/core_object.h>
-#include "../include/implementations.h"
+#include "../include/impl.h"
 #include "../include/kyber.h"
 #include "../../util/util.h"
 

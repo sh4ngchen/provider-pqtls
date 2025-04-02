@@ -11,7 +11,7 @@
 #include <openssl/err.h>
 #include <openssl/proverr.h>
 #include <openssl/evp.h>
-#include "../include/implementations.h"
+#include "../include/impl.h"
 #include "../include/kyber.h"
 
 static OSSL_FUNC_kem_newctx_fn kyber1024_kem_newctx;

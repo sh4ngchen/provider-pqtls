@@ -25,12 +25,12 @@ echo "Install dilithium: cp crypto/dilithium/ref/lib/libpqcrystals_fips202_ref.s
 cp crypto/dilithium/ref/libpqcrystals_fips202_ref.so /usr/local/lib/libpqcrystals_dilithium_fips202_ref.so
 
 echo "Build randombytes: make"
-pushd randombytes
+pushd crypto/random
 make
 popd
 
-echo "Install randombytes: cp randombytes/librandombytes.so /usr/local/lib/"
-cp randombytes/librandombytes.so /usr/local/lib/
+echo "Install randombytes: cp crypto/random/librandombytes.so /usr/local/lib/"
+cp crypto/random/librandombytes.so /usr/local/lib/
 
 echo "ldconfig"
 ldconfig

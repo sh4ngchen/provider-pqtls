@@ -11,10 +11,10 @@ BUILD_DIR = _build
 OBJ_DIR = $(BUILD_DIR)/obj
 
 # 源文件
-SRC = $(wildcard implementations/keymgmt/*.c) \
-	  $(wildcard implementations/encoder/*.c) \
-	  $(wildcard implementations/decoder/*.c) \
-	  $(wildcard implementations/kem/*.c) \
+SRC = $(wildcard impl/keymgmt/*.c) \
+	  $(wildcard impl/encoder/*.c) \
+	  $(wildcard impl/decoder/*.c) \
+	  $(wildcard impl/kem/*.c) \
 	  $(wildcard util/*.c) \
 	  provider.c
 

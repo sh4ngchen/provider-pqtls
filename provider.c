@@ -10,7 +10,7 @@
 #include <openssl/crypto.h>
 #include <openssl/params.h>
 #include <openssl/core_dispatch.h>
-#include "implementations/include/implementations.h"
+#include "impl/include/impl.h"
 #include "provider.h"
 
 /* Provider Context 工具函数的实现 */

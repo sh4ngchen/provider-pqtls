@@ -8,7 +8,7 @@ pushd crypto/dilithium/ref
 make clean
 popd
 
-pushd randombytes
+pushd crypto/random
 make clean
 popd
 

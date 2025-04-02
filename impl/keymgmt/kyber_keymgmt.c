@@ -4,7 +4,7 @@
 #include <openssl/proverr.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
-#include "../include/implementations.h"
+#include "../include/impl.h"
 #include "../include/kyber.h"
 
 /* 通用函数：根据版本获取密钥长度 */
