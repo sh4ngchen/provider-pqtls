@@ -11,20 +11,8 @@
 #include <openssl/asn1t.h>
 #include "../include/impl.h"
 #include "../include/kyber.h"
+#include "../../util/util.h"
 
-/* 注册Kyber OID */
-static int register_kyber_oid(void) {
-    static int initialized = 0;
-    if (!initialized) {
-        int nid = OBJ_create(OID_kyber, "kyber", "Kyber Post-Quantum Algorithm");
-        if (nid != NID_undef) {
-            initialized = 1;
-            return nid;
-        }
-    }
-    /* 如果已经注册，获取现有的NID */
-    return OBJ_txt2nid("kyber");
-}
 
 /* 1. 创建 encoder 上下文 */
 static OSSL_FUNC_encoder_newctx_fn kyber_encoder_newctx;
@@ -115,18 +103,26 @@ static int kyber_key_to_der(void *ctx, const KYBER_KEY *kyber_key, unsigned char
 /* 将密钥写入PKCS8_PRIV_KEY_INFO结构体 */
 static PKCS8_PRIV_KEY_INFO *kyber_key_to_pkcs8(void *ctx, const KYBER_KEY *kyber_key) {
     KYBER_ENCODER_CTX *enc_ctx = ctx;
+    int nid = 0;
 
     if (!kyber_key) {
         return NULL;
     }
 
-    /* 获取或注册Kyber的OID */
-    int nid = register_kyber_oid();
-    if (nid == NID_undef) {
-        /* 回退方案：使用ed25519的OID */
-        nid = NID_ED25519;
+    switch (kyber_key->version) {
+        case 512:
+            nid = register_oid(OID_kyber512, "KYBER512", "Kyber Post-Quantum Algorithm");
+            break;
+        case 768:
+            nid = register_oid(OID_kyber768, "KYBER768", "Kyber Post-Quantum Algorithm");
+            break;
+        case 1024:
+            nid = register_oid(OID_kyber1024, "KYBER1024", "Kyber Post-Quantum Algorithm");
+            break;
+        default:
+            return NULL;
     }
-    
+
     PKCS8_PRIV_KEY_INFO *p8info = PKCS8_PRIV_KEY_INFO_new();
     if (!p8info) {
         return NULL;
@@ -152,15 +148,24 @@ static PKCS8_PRIV_KEY_INFO *kyber_key_to_pkcs8(void *ctx, const KYBER_KEY *kyber
 static X509_PUBKEY *kyber_key_to_x509_pubkey(void *ctx, const KYBER_KEY *kyber_key) {
     KYBER_ENCODER_CTX *enc_ctx = ctx;
     X509_PUBKEY *pubkey = NULL;
-    int derlen;
+    int derlen, nid;
     unsigned char *der = NULL;
     if (!kyber_key || !kyber_key->has_public) {
         return NULL;
     }
 
-    int nid = register_kyber_oid();
-    if (nid == NID_undef) {
-        return NULL;
+    switch (kyber_key->version) {
+        case 512:
+            nid = register_oid(OID_kyber512, "KYBER512", "Kyber Post-Quantum Algorithm");
+            break;
+        case 768:
+            nid = register_oid(OID_kyber768, "KYBER768", "Kyber Post-Quantum Algorithm");
+            break;
+        case 1024:
+            nid = register_oid(OID_kyber1024, "KYBER1024", "Kyber Post-Quantum Algorithm");
+            break;
+        default:
+            return NULL;
     }
     
     /* 确保仅处理公钥 */

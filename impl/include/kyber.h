@@ -5,7 +5,10 @@
 #include "../../provider.h"
 
 /* 定义Kyber的临时OID */
-#define OID_kyber "1.3.6.1.4.1.2.267.8"
+#define OID_kyber512 "1.3.6.1.4.1.2.267.8.2.2"
+#define OID_kyber768 "1.3.6.1.4.1.2.267.8.3.3"
+#define OID_kyber1024 "1.3.6.1.4.1.2.267.8.4.4"
+
 
 /* KYBER_KEY 结构体定义 */
 typedef struct {

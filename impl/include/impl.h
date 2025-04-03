@@ -25,3 +25,8 @@ extern const OSSL_DISPATCH dilithium_decoder_der_functions[];
 extern const OSSL_DISPATCH kyber512_kem_functions[];
 extern const OSSL_DISPATCH kyber768_kem_functions[];
 extern const OSSL_DISPATCH kyber1024_kem_functions[];
+
+/* Signature */
+extern const OSSL_DISPATCH dilithium2_signature_functions[];
+extern const OSSL_DISPATCH dilithium3_signature_functions[];
+extern const OSSL_DISPATCH dilithium5_signature_functions[];

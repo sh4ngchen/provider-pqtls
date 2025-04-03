@@ -5,7 +5,9 @@
 #include "../../provider.h"
 
 /* 定义Dilithium的临时OID */
-#define OID_dilithium "1.3.6.1.4.1.2.267.7"
+#define OID_dilithium2 "1.3.6.1.4.1.2.267.7.4.4"
+#define OID_dilithium3 "1.3.6.1.4.1.2.267.7.6.5"
+#define OID_dilithium5 "1.3.6.1.4.1.2.267.7.8.7"
 
 /* DILITHIUM_KEY 结构体定义 */
 typedef struct {
@@ -32,6 +34,7 @@ typedef struct {
     size_t siglen;               /* 签名长度 */
     unsigned char *tbs;          /* 待签名数据 */
     size_t tbslen;               /* 待签名数据长度 */
+    char *propq;                 /* 属性查询字符串 */
 } DILITHIUM_SIGN_CTX;
 
 /* DILITHIUM_GEN_CTX 结构体定义 */

@@ -11,20 +11,7 @@
 #include <openssl/asn1t.h>
 #include "../include/impl.h"
 #include "../include/dilithium.h"
-
-/* 注册Dilithium OID */
-static int register_dilithium_oid(void) {
-    static int initialized = 0;
-    if (!initialized) {
-        int nid = OBJ_create(OID_dilithium, "dilithium", "Dilithium Post-Quantum Signature Algorithm");
-        if (nid != NID_undef) {
-            initialized = 1;
-            return nid;
-        }
-    }
-    /* 如果已经注册，获取现有的NID */
-    return OBJ_txt2nid("dilithium");
-}
+#include "../../util/util.h"
 
 /* 1. 创建 encoder 上下文 */
 static OSSL_FUNC_encoder_newctx_fn dilithium_encoder_newctx;
@@ -115,17 +102,26 @@ static int dilithium_key_to_der(void *ctx, const DILITHIUM_KEY *dilithium_key, u
 /* 将密钥写入PKCS8_PRIV_KEY_INFO结构体 */
 static PKCS8_PRIV_KEY_INFO *dilithium_key_to_pkcs8(void *ctx, const DILITHIUM_KEY *dilithium_key) {
     DILITHIUM_ENCODER_CTX *enc_ctx = ctx;
+    int nid = 0;
 
     if (!dilithium_key) {
         return NULL;
     }
 
-    /* 获取或注册Dilithium的OID */
-    int nid = register_dilithium_oid();
-    if (nid == NID_undef) {
-        /* 回退方案：使用ed25519的OID */
-        nid = NID_ED25519;
+    switch (dilithium_key->version) {
+    case 2:
+        nid = register_oid(OID_dilithium2, "DILITHIUM2", "Dilithium Post-Quantum Algorithm");
+        break;
+    case 3:
+        nid = register_oid(OID_dilithium3, "DILITHIUM3", "Dilithium Post-Quantum Algorithm");
+        break;
+    case 5:
+        nid = register_oid(OID_dilithium5, "DILITHIUM5", "Dilithium Post-Quantum Algorithm");
+        break;
+    default:
+        return NULL;
     }
+    
     
     PKCS8_PRIV_KEY_INFO *p8info = PKCS8_PRIV_KEY_INFO_new();
     if (!p8info) {
@@ -152,16 +148,25 @@ static PKCS8_PRIV_KEY_INFO *dilithium_key_to_pkcs8(void *ctx, const DILITHIUM_KE
 static X509_PUBKEY *dilithium_key_to_x509_pubkey(void *ctx, const DILITHIUM_KEY *dilithium_key) {
     DILITHIUM_ENCODER_CTX *enc_ctx = ctx;
     X509_PUBKEY *pubkey = NULL;
-    int derlen;
+    int derlen, nid;
     unsigned char *der = NULL;
     
     if (!dilithium_key || !dilithium_key->public_key) {
         return NULL;
     }
 
-    int nid = register_dilithium_oid();
-    if (nid == NID_undef) {
-        return NULL;
+    switch (dilithium_key->version) {
+        case 2:
+            nid = register_oid(OID_dilithium2, "DILITHIUM2", "Dilithium Post-Quantum Algorithm");
+            break;
+        case 3:
+            nid = register_oid(OID_dilithium3, "DILITHIUM3", "Dilithium Post-Quantum Algorithm");
+            break;
+        case 5:
+            nid = register_oid(OID_dilithium5, "DILITHIUM5", "Dilithium Post-Quantum Algorithm");
+            break;
+        default:
+            return NULL;
     }
     
     /* 确保仅处理公钥 */

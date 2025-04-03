@@ -8,7 +8,7 @@
 #include "../include/dilithium.h"
 
 /* 创建一个新的 Dilithium 密钥结构，根据版本设置不同参数 */
-static DILITHIUM_KEY *DILITHIUM_KEY_new(OSSL_LIB_CTX *libctx, int version)
+static DILITHIUM_KEY *dilithium_key_new(OSSL_LIB_CTX *libctx, int version)
 {
     DILITHIUM_KEY *key = OPENSSL_zalloc(sizeof(DILITHIUM_KEY));
 
@@ -43,7 +43,7 @@ static DILITHIUM_KEY *DILITHIUM_KEY_new(OSSL_LIB_CTX *libctx, int version)
 }
 
 /* 增加密钥的引用计数 */
-static DILITHIUM_KEY *DILITHIUM_KEY_dup(DILITHIUM_KEY *key)
+static DILITHIUM_KEY *dilithium_key_dup(DILITHIUM_KEY *key)
 {
     if (key != NULL)
         ++key->references;
@@ -51,7 +51,7 @@ static DILITHIUM_KEY *DILITHIUM_KEY_dup(DILITHIUM_KEY *key)
 }
 
 /* 释放密钥结构 */
-static void DILITHIUM_KEY_free(DILITHIUM_KEY *key)
+static void dilithium_key_free(DILITHIUM_KEY *key)
 {
     if (key != NULL && --key->references == 0) {
         OPENSSL_clear_free(key->secret_key, key->secret_key_len);
@@ -63,17 +63,17 @@ static void DILITHIUM_KEY_free(DILITHIUM_KEY *key)
 /* 创建一个空的 Dilithium 密钥 */
 static void *dilithium2_newkey(void *provctx)
 {
-    return DILITHIUM_KEY_new(PROV_CTX_get0_libctx(provctx), 2);
+    return dilithium_key_new(PROV_CTX_get0_libctx(provctx), 2);
 }
 
 static void *dilithium3_newkey(void *provctx)
 {
-    return DILITHIUM_KEY_new(PROV_CTX_get0_libctx(provctx), 3);
+    return dilithium_key_new(PROV_CTX_get0_libctx(provctx), 3);
 }
 
 static void *dilithium5_newkey(void *provctx)
 {
-    return DILITHIUM_KEY_new(PROV_CTX_get0_libctx(provctx), 5);
+    return dilithium_key_new(PROV_CTX_get0_libctx(provctx), 5);
 }
 
 /* 生成 Dilithium 密钥对 */
@@ -199,17 +199,17 @@ static void *dilithium_gen_generate(void *genctx, OSSL_CALLBACK *cb, void *cbarg
         return NULL;
 
     if (ctx->key != NULL) {
-        key = DILITHIUM_KEY_dup(ctx->key);
+        key = dilithium_key_dup(ctx->key);
         return key;
     }
 
-    key = DILITHIUM_KEY_new(PROV_CTX_get0_libctx(ctx->provctx), ctx->version);
+    key = dilithium_key_new(PROV_CTX_get0_libctx(ctx->provctx), ctx->version);
     if (key == NULL)
         return NULL;
 
     /* 生成密钥对 */
     if (dilithium_gen(key) == 0) {
-        DILITHIUM_KEY_free(key);
+        dilithium_key_free(key);
         return NULL;
     }
 
@@ -433,11 +433,28 @@ static void *dilithium_load(const void *reference, size_t reference_sz)
     dst->libctx = src->libctx;
     dst->public_key_len = src->public_key_len;
     dst->secret_key_len = src->secret_key_len;
-    dst->sig_len = src->sig_len;
-    dst->version = src->version;
     dst->references = 1;
     dst->has_public = 0;
     dst->has_private = 0;
+
+    switch (src->public_key_len) {
+    case pqcrystals_dilithium2_PUBLICKEYBYTES:
+        dst->sig_len = pqcrystals_dilithium2_BYTES;
+        dst->version = 2;
+        break;
+    case pqcrystals_dilithium3_PUBLICKEYBYTES:
+        dst->sig_len = pqcrystals_dilithium3_BYTES;
+        dst->version = 3;
+        break;
+    case pqcrystals_dilithium5_PUBLICKEYBYTES:
+        dst->sig_len = pqcrystals_dilithium5_BYTES;
+        dst->version = 5;
+        break;
+    default:
+        OPENSSL_free(dst);
+        ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_KEY);
+        return NULL;
+    }
     
     /* 复制公钥（如果存在） */
     if (src->public_key != NULL) {
@@ -471,8 +488,8 @@ static void *dilithium_load(const void *reference, size_t reference_sz)
 const OSSL_DISPATCH dilithium2_keymgmt_functions[] = {
     /* 构造/析构函数 */
     { OSSL_FUNC_KEYMGMT_NEW, (void (*)(void))dilithium2_newkey },
-    { OSSL_FUNC_KEYMGMT_FREE, (void (*)(void))DILITHIUM_KEY_free },
-    { OSSL_FUNC_KEYMGMT_DUP, (void (*)(void))DILITHIUM_KEY_dup },
+    { OSSL_FUNC_KEYMGMT_FREE, (void (*)(void))dilithium_key_free },
+    { OSSL_FUNC_KEYMGMT_DUP, (void (*)(void))dilithium_key_dup },
 
     /* 密钥生成相关函数 */
     { OSSL_FUNC_KEYMGMT_GEN_INIT, (void (*)(void))dilithium2_gen_init },
@@ -509,8 +526,8 @@ const OSSL_DISPATCH dilithium2_keymgmt_functions[] = {
 const OSSL_DISPATCH dilithium3_keymgmt_functions[] = {
     /* 构造/析构函数 */
     { OSSL_FUNC_KEYMGMT_NEW, (void (*)(void))dilithium3_newkey },
-    { OSSL_FUNC_KEYMGMT_FREE, (void (*)(void))DILITHIUM_KEY_free },
-    { OSSL_FUNC_KEYMGMT_DUP, (void (*)(void))DILITHIUM_KEY_dup },
+    { OSSL_FUNC_KEYMGMT_FREE, (void (*)(void))dilithium_key_free },
+    { OSSL_FUNC_KEYMGMT_DUP, (void (*)(void))dilithium_key_dup },
 
     /* 密钥生成相关函数 */
     { OSSL_FUNC_KEYMGMT_GEN_INIT, (void (*)(void))dilithium3_gen_init },
@@ -547,8 +564,8 @@ const OSSL_DISPATCH dilithium3_keymgmt_functions[] = {
 const OSSL_DISPATCH dilithium5_keymgmt_functions[] = {
     /* 构造/析构函数 */
     { OSSL_FUNC_KEYMGMT_NEW, (void (*)(void))dilithium5_newkey },
-    { OSSL_FUNC_KEYMGMT_FREE, (void (*)(void))DILITHIUM_KEY_free },
-    { OSSL_FUNC_KEYMGMT_DUP, (void (*)(void))DILITHIUM_KEY_dup },
+    { OSSL_FUNC_KEYMGMT_FREE, (void (*)(void))dilithium_key_free },
+    { OSSL_FUNC_KEYMGMT_DUP, (void (*)(void))dilithium_key_dup },
 
     /* 密钥生成相关函数 */
     { OSSL_FUNC_KEYMGMT_GEN_INIT, (void (*)(void))dilithium5_gen_init },

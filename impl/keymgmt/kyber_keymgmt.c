@@ -6,6 +6,7 @@
 #include <openssl/rand.h>
 #include "../include/impl.h"
 #include "../include/kyber.h"
+#include "../../util/util.h"
 
 /* 通用函数：根据版本获取密钥长度 */
 static void set_key_size_by_version(int version, size_t *pubkey_len, size_t *seckey_len)

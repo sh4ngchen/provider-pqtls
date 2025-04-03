@@ -7,4 +7,6 @@
 X509_PUBKEY *pltls_d2i_X509_PUBKEY_INTERNAL(const unsigned char **pp, long len,
                                            OSSL_LIB_CTX *libctx);
 
+int register_oid(char *oid, char *name, char *description);
+
 #endif /* PQTLS_UTIL_H */

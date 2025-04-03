@@ -121,13 +121,26 @@ openssl pkeyutl -decap -inkey kyber512.pem -in kyber512.ct -out kyber512.ss2
 cat kyber512.ss1 | od -tx1 && cat kyber512.ss2 | od -tx1
 ```
 
+### Dilithium Sign
+
+```bash
+# 生成密钥
+openssl genpkey -algorithm DILITHIUM3 -out dilithium3.pem -outpubkey dilithium3.pub
+
+# 私钥签名
+openssl dgst -sha256 -sign dilithium3.pem -signature dilithium3.sig message.txt
+
+# 公钥验签
+openssl dgst -sha256 -verify dilithium3.pub -signature dilithium3.sig message.txt
+```
+
 ## 开发路线图
 
 - [x] 实现Kyber密钥管理(keymgmt)模块
 - [x] 实现Kyber密钥编码/解码模块
 - [x] 实现Kyber密钥封装机制(KEM)
 - [x] 实现Dilithium keymgmt/encoder/decoder模块
-- [ ] 实现Dilithium signature模块
+- [x] 实现Dilithium signature模块
 - [ ] 与TLS握手协议集成
 - [ ] 进行性能测试与安全分析
 - [ ] 完善文档和示例
