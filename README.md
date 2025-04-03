@@ -9,6 +9,7 @@
 - **密钥管理(keymgmt)**: 实现Kyber/Dilithium密钥对的生成、导入、导出和管理
 - **编码/解码(encoder/decoder)**: 实现Kyber/Dilithium密钥的编解码
 - **Kyber KEM**: 实现Kyber封装/解封装传递共享密钥
+- **Dilithium Sig**: 实现Dilithium签名/验签
 
 ## 代码结构
 
