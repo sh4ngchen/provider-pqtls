@@ -61,18 +61,21 @@ static int extract_key_data_from_octet_string(void *ctx, ASN1_OCTET_STRING *oct,
         secret_key_len = pqcrystals_kyber1024_SECRETKEYBYTES;
         public_key_len = pqcrystals_kyber1024_PUBLICKEYBYTES;
         dec_ctx->keytype_name = "KYBER1024";
+        key->version = 1024;
     }
     else if (oct->length == pqcrystals_kyber768_SECRETKEYBYTES + pqcrystals_kyber768_PUBLICKEYBYTES)
     { /* Kyber-768 */
         secret_key_len = pqcrystals_kyber768_SECRETKEYBYTES;
         public_key_len = pqcrystals_kyber768_PUBLICKEYBYTES;
         dec_ctx->keytype_name = "KYBER768";
+        key->version = 768;
     }
     else if (oct->length == pqcrystals_kyber512_SECRETKEYBYTES + pqcrystals_kyber512_PUBLICKEYBYTES)
     { /* Kyber-512 */
         secret_key_len = pqcrystals_kyber512_SECRETKEYBYTES;
         public_key_len = pqcrystals_kyber512_PUBLICKEYBYTES;
         dec_ctx->keytype_name = "KYBER512";
+        key->version = 512;
     }
     else
     {
@@ -255,6 +258,7 @@ static int kyber_decode_der(void *ctx, OSSL_CORE_BIO *cin, int selection,
                         key->public_key_len = pk_len;
                         key->has_public = 1;
                         dec_ctx->keytype_name = "KYBER1024";
+                        key->version = 1024;
                     }
                 }
                 else if (pk_len == pqcrystals_kyber768_PUBLICKEYBYTES)
@@ -266,6 +270,7 @@ static int kyber_decode_der(void *ctx, OSSL_CORE_BIO *cin, int selection,
                         key->public_key_len = pk_len;
                         key->has_public = 1;
                         dec_ctx->keytype_name = "KYBER768";
+                        key->version = 768;
                     }
                 }
                 else if (pk_len == pqcrystals_kyber512_PUBLICKEYBYTES)
@@ -277,6 +282,7 @@ static int kyber_decode_der(void *ctx, OSSL_CORE_BIO *cin, int selection,
                         key->public_key_len = pk_len;
                         key->has_public = 1;
                         dec_ctx->keytype_name = "KYBER512";
+                        key->version = 512;
                     }
                 }
                 ASN1_OCTET_STRING_free(oct);

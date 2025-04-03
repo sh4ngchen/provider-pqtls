@@ -436,25 +436,8 @@ static void *dilithium_load(const void *reference, size_t reference_sz)
     dst->references = 1;
     dst->has_public = 0;
     dst->has_private = 0;
-
-    switch (src->public_key_len) {
-    case pqcrystals_dilithium2_PUBLICKEYBYTES:
-        dst->sig_len = pqcrystals_dilithium2_BYTES;
-        dst->version = 2;
-        break;
-    case pqcrystals_dilithium3_PUBLICKEYBYTES:
-        dst->sig_len = pqcrystals_dilithium3_BYTES;
-        dst->version = 3;
-        break;
-    case pqcrystals_dilithium5_PUBLICKEYBYTES:
-        dst->sig_len = pqcrystals_dilithium5_BYTES;
-        dst->version = 5;
-        break;
-    default:
-        OPENSSL_free(dst);
-        ERR_raise(ERR_LIB_PROV, PROV_R_INVALID_KEY);
-        return NULL;
-    }
+    dst->sig_len = src->sig_len;
+    dst->version = src->version;
     
     /* 复制公钥（如果存在） */
     if (src->public_key != NULL) {

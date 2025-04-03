@@ -62,29 +62,41 @@ static int extract_key_data_from_octet_string(void *ctx, ASN1_OCTET_STRING *oct,
         secret_key_len = pqcrystals_dilithium2_SECRETKEYBYTES;
         public_key_len = pqcrystals_dilithium2_PUBLICKEYBYTES;
         dec_ctx->keytype_name = "DILITHIUM2";
+        key->version = 2;
+        key->sig_len = pqcrystals_dilithium2_BYTES;
     } else if (oct->length == pqcrystals_dilithium3_SECRETKEYBYTES + pqcrystals_dilithium3_PUBLICKEYBYTES) {
         secret_key_len = pqcrystals_dilithium3_SECRETKEYBYTES;
         public_key_len = pqcrystals_dilithium3_PUBLICKEYBYTES;
         dec_ctx->keytype_name = "DILITHIUM3";
+        key->version = 3;
+        key->sig_len = pqcrystals_dilithium3_BYTES;
     } else if (oct->length == pqcrystals_dilithium5_SECRETKEYBYTES + pqcrystals_dilithium5_PUBLICKEYBYTES) {
         secret_key_len = pqcrystals_dilithium5_SECRETKEYBYTES;
         public_key_len = pqcrystals_dilithium5_PUBLICKEYBYTES;
         dec_ctx->keytype_name = "DILITHIUM5";
+        key->version = 5;
+        key->sig_len = pqcrystals_dilithium5_BYTES;
     } else if (oct->length == pqcrystals_dilithium2_PUBLICKEYBYTES) {
         /* 只包含公钥 */
         secret_key_len = 0;
         public_key_len = pqcrystals_dilithium2_PUBLICKEYBYTES;
         dec_ctx->keytype_name = "DILITHIUM2";
+        key->version = 2;
+        key->sig_len = pqcrystals_dilithium2_BYTES;
     } else if (oct->length == pqcrystals_dilithium3_PUBLICKEYBYTES) {
         /* 只包含公钥 */
         secret_key_len = 0;
         public_key_len = pqcrystals_dilithium3_PUBLICKEYBYTES;
         dec_ctx->keytype_name = "DILITHIUM3";
+        key->version = 3;
+        key->sig_len = pqcrystals_dilithium3_BYTES;
     } else if (oct->length == pqcrystals_dilithium5_PUBLICKEYBYTES) {
         /* 只包含公钥 */
         secret_key_len = 0;
         public_key_len = pqcrystals_dilithium5_PUBLICKEYBYTES;
         dec_ctx->keytype_name = "DILITHIUM5";
+        key->version = 5;
+        key->sig_len = pqcrystals_dilithium5_BYTES;
     } else {
         return 0; /* 不支持的数据长度 */
     }
