@@ -255,36 +255,33 @@ static int dilithium_decode_der(void *ctx, OSSL_CORE_BIO *cin, int selection,
             const unsigned char *octs_ptr = octs;
             oct = d2i_ASN1_OCTET_STRING(NULL, &octs_ptr, octs_len);
             
-            if (oct != NULL) {
-                /* 设置公钥 */
-                key->public_key = OPENSSL_malloc(oct->length);
-                if (key->public_key != NULL) {
-                    memcpy(key->public_key, oct->data, oct->length);
-                    key->public_key_len = oct->length;
-                    
-                    ASN1_OCTET_STRING_free(oct);
-                    X509_PUBKEY_free(xpub);
-                    
-                    // 创建参数并调用回调
-                    OSSL_PARAM params[4];
-                    int object_type = OSSL_OBJECT_PKEY;
-
-                    params[0] = OSSL_PARAM_construct_int(OSSL_OBJECT_PARAM_TYPE, &object_type);
-                    params[1] = OSSL_PARAM_construct_utf8_string(OSSL_OBJECT_PARAM_DATA_TYPE, dec_ctx->keytype_name, 0);
-                    params[2] = OSSL_PARAM_construct_octet_string(OSSL_OBJECT_PARAM_REFERENCE, key, sizeof(*key));
-                    params[3] = OSSL_PARAM_construct_end();
-
-                    ret = data_cb(params, data_cbarg);
-
-                    if (!ret) {
-                        OPENSSL_free(key->public_key);
-                        OPENSSL_free(key);
-                    }
-
-                    OPENSSL_free(der);
-                    return ret;
-                }
+            if (oct != NULL && extract_key_data_from_octet_string(dec_ctx, oct, key))
+            {
                 ASN1_OCTET_STRING_free(oct);
+                X509_PUBKEY_free(xpub);
+                OPENSSL_free(der); /* 释放der */
+
+                // 创建参数并调用回调
+                OSSL_PARAM params[4];
+                int object_type = OSSL_OBJECT_PKEY;
+
+                params[0] = OSSL_PARAM_construct_int(OSSL_OBJECT_PARAM_DATA, &object_type);
+                params[1] = OSSL_PARAM_construct_utf8_string(OSSL_OBJECT_PARAM_DATA_TYPE, dec_ctx->keytype_name, 0);
+                params[2] = OSSL_PARAM_construct_octet_string(OSSL_OBJECT_PARAM_REFERENCE, key, sizeof(*key));
+                params[3] = OSSL_PARAM_construct_end();
+
+                ret = data_cb(params, data_cbarg);
+
+                if (!ret)
+                {
+                    /* 释放key资源 */
+                    if (key->secret_key)
+                        OPENSSL_free(key->secret_key);
+                    if (key->public_key)
+                        OPENSSL_free(key->public_key);
+                    OPENSSL_free(key);
+                }
+                return ret;
             }
             X509_PUBKEY_free(xpub);
         } else if (xpub != NULL) {
