@@ -61,41 +61,47 @@ static int extract_key_data_from_octet_string(void *ctx, ASN1_OCTET_STRING *oct,
     if (oct->length == pqcrystals_dilithium2_SECRETKEYBYTES + pqcrystals_dilithium2_PUBLICKEYBYTES) {
         secret_key_len = pqcrystals_dilithium2_SECRETKEYBYTES;
         public_key_len = pqcrystals_dilithium2_PUBLICKEYBYTES;
-        dec_ctx->keytype_name = "DILITHIUM2";
+        dec_ctx->keytype_name = "dilithium2";
         key->version = 2;
+        key->tls_name = "dilithium2";
         key->sig_len = pqcrystals_dilithium2_BYTES;
     } else if (oct->length == pqcrystals_dilithium3_SECRETKEYBYTES + pqcrystals_dilithium3_PUBLICKEYBYTES) {
         secret_key_len = pqcrystals_dilithium3_SECRETKEYBYTES;
         public_key_len = pqcrystals_dilithium3_PUBLICKEYBYTES;
-        dec_ctx->keytype_name = "DILITHIUM3";
+        dec_ctx->keytype_name = "dilithium3";
         key->version = 3;
+        key->tls_name = "dilithium3";
         key->sig_len = pqcrystals_dilithium3_BYTES;
     } else if (oct->length == pqcrystals_dilithium5_SECRETKEYBYTES + pqcrystals_dilithium5_PUBLICKEYBYTES) {
         secret_key_len = pqcrystals_dilithium5_SECRETKEYBYTES;
         public_key_len = pqcrystals_dilithium5_PUBLICKEYBYTES;
-        dec_ctx->keytype_name = "DILITHIUM5";
+        dec_ctx->keytype_name = "dilithium5";
         key->version = 5;
+        key->tls_name = "dilithium5";
         key->sig_len = pqcrystals_dilithium5_BYTES;
     } else if (oct->length == pqcrystals_dilithium2_PUBLICKEYBYTES) {
         /* 只包含公钥 */
         secret_key_len = 0;
         public_key_len = pqcrystals_dilithium2_PUBLICKEYBYTES;
-        dec_ctx->keytype_name = "DILITHIUM2";
+        dec_ctx->keytype_name = "dilithium2";
         key->version = 2;
+        key->tls_name = "dilithium2";
         key->sig_len = pqcrystals_dilithium2_BYTES;
     } else if (oct->length == pqcrystals_dilithium3_PUBLICKEYBYTES) {
         /* 只包含公钥 */
         secret_key_len = 0;
         public_key_len = pqcrystals_dilithium3_PUBLICKEYBYTES;
-        dec_ctx->keytype_name = "DILITHIUM3";
+        dec_ctx->keytype_name = "dilithium3";
         key->version = 3;
+        key->tls_name = "dilithium3";
         key->sig_len = pqcrystals_dilithium3_BYTES;
     } else if (oct->length == pqcrystals_dilithium5_PUBLICKEYBYTES) {
         /* 只包含公钥 */
         secret_key_len = 0;
         public_key_len = pqcrystals_dilithium5_PUBLICKEYBYTES;
-        dec_ctx->keytype_name = "DILITHIUM5";
+        dec_ctx->keytype_name = "dilithium5";
         key->version = 5;
+        key->tls_name = "dilithium5";
         key->sig_len = pqcrystals_dilithium5_BYTES;
     } else {
         return 0; /* 不支持的数据长度 */

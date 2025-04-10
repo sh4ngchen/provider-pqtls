@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-本项目开发一个支持后量子加密算法的OpenSSL Provider，实现在TLS协议中的应用。
+一个支持后量子加密算法并适配TLS协议的OpenSSL Provider
 
 ## 当前实现内容
 
@@ -25,10 +25,10 @@
 │   ├── encoder
 │   ├── decoder
 │   ├── keymgmt
-│   └── include
+│   ├── include
+│   └── prov_capabilities.c
 ├── util  # 工具
 │   ├── x509.c
-│   ├── oid.c
 │   └── util.h
 ├── provider.h
 ├── provider.c
@@ -41,6 +41,14 @@
 ## 构建指南
 
 ```bash
+# 构建安装openssl 3.4
+git clone https://github.com/openssl/openssl && cd openssl
+git checkout openssl-3.4.0
+./config -d '-Wl,--enable-new-dtags,-rpath,$(LIBRPATH)'
+make -j$(nproc) && make install
+
+# 自行清理旧版本openssl，注意清理include文件
+
 # 克隆仓库
 git clone https://github.com/sh4ngchen/provider-pqtls.git
 
@@ -93,19 +101,21 @@ openssl list -key-managers | grep pqtls
 openssl list -encoders | grep pqtls
 openssl list -decoders | grep pqtls
 openssl list -kem-algorithms | grep pqtls
+openssl list -signature-algorithms | grep pqtls 
 ```
 
 ### Kyber密钥操作
 
 ```bash
 # 生成Kyber密钥对并输出公钥
-openssl genpkey -algorithm KYBER512 -out kyber512.pem -outpubkey kyber512.pub
+openssl genpkey -algorithm kyber512 -out kyber512.pem -outpubkey kyber512.pub
 
 # 输出der格式
-openssl genpkey -algorithm KYBER512 -out kyber512.der -outform DER
+openssl genpkey -algorithm kyber512 -out kyber512.der -outform DER
 
 # 查看密钥信息
 目前不支持-text输出
+openssl asn1prase -in kyber512.pem
 
 # 从密钥提取公钥
 openssl pkey -in kyber512.pem -pubout -out kyber512.pub
@@ -128,7 +138,7 @@ cat kyber512.ss1 | od -tx1 && cat kyber512.ss2 | od -tx1
 
 ```bash
 # 生成密钥
-openssl genpkey -algorithm DILITHIUM3 -out dilithium3.pem -outpubkey dilithium3.pub
+openssl genpkey -algorithm dilithium3 -out dilithium3.pem -outpubkey dilithium3.pub
 
 # 私钥签名
 openssl dgst -sha256 -sign dilithium3.pem -signature dilithium3.sig message.txt
@@ -137,21 +147,32 @@ openssl dgst -sha256 -sign dilithium3.pem -signature dilithium3.sig message.txt
 openssl dgst -sha256 -verify dilithium3.pub -signature dilithium3.sig message.txt
 ```
 
-## 开发路线图
+### Generate CRT
 
-- [x] 实现Kyber密钥管理(keymgmt)模块
-- [x] 实现Kyber密钥编码/解码模块
-- [x] 实现Kyber密钥封装机制(KEM)
-- [x] 实现Dilithium keymgmt/encoder/decoder模块
-- [x] 实现Dilithium signature模块
-- [ ] 与TLS握手协议集成
-- [ ] 进行性能测试与安全分析
+```bash
+# 生成crt证书
+openssl req -x509 -new -key dilithium2.pem -out dilithium2.crt -days 365 \
+  -subj "/CN=Post-Quantum Test Server" \
+  -addext "keyUsage=digitalSignature" \
+  -addext "basicConstraints=CA:FALSE"
+```
+
+## TODO List
+
+- [x] 实现`Kyber keymgmt`
+- [x] 实现`Kyber encoder/decoder`
+- [x] 实现`Kyber kem`
+- [x] 实现`Dilithium keymgmt/encoder/decoder`
+- [x] 实现`Dilithium signature`
+- [x] 使用`openssl req`生成`crt`证书
+- [x] 注册`groups`和`sigalgs`
+- [ ] 适配`s_server`与`s_client`功能
+- [ ] 进行性能测试
 - [ ] 完善文档和示例
 
-## 依赖条件
+## Requirements
 
-- OpenSSL 3.0或更高版本
-- GCC或Clang编译器
+- [OpenSSL 3.4+](https://github.com/openssl/openssl/tree/openssl-3.4.0)
 - [Kyber](https://github.com/pq-crystals/kyber)
 - [Dilithium](https://github.com/pq-crystals/dilithium)
 

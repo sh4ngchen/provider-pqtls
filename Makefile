@@ -16,6 +16,7 @@ SRC = $(wildcard impl/keymgmt/*.c) \
 	  $(wildcard impl/decoder/*.c) \
 	  $(wildcard impl/kem/*.c) \
 	  $(wildcard impl/sign/*.c) \
+	  $(wildcard impl/prov_capabilities.c) \
 	  $(wildcard util/*.c) \
 	  provider.c
 

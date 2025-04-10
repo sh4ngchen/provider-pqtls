@@ -111,13 +111,13 @@ static PKCS8_PRIV_KEY_INFO *kyber_key_to_pkcs8(void *ctx, const KYBER_KEY *kyber
 
     switch (kyber_key->version) {
         case 512:
-            nid = register_oid(OID_kyber512, "KYBER512", "Kyber Post-Quantum Algorithm");
+            nid = OBJ_txt2nid("kyber512");
             break;
         case 768:
-            nid = register_oid(OID_kyber768, "KYBER768", "Kyber Post-Quantum Algorithm");
+            nid = OBJ_txt2nid("kyber768");
             break;
         case 1024:
-            nid = register_oid(OID_kyber1024, "KYBER1024", "Kyber Post-Quantum Algorithm");
+            nid = OBJ_txt2nid("kyber1024");
             break;
         default:
             return NULL;
@@ -156,13 +156,13 @@ static X509_PUBKEY *kyber_key_to_x509_pubkey(void *ctx, const KYBER_KEY *kyber_k
 
     switch (kyber_key->version) {
         case 512:
-            nid = register_oid(OID_kyber512, "KYBER512", "Kyber Post-Quantum Algorithm");
+            nid = OBJ_txt2nid("kyber512");
             break;
         case 768:
-            nid = register_oid(OID_kyber768, "KYBER768", "Kyber Post-Quantum Algorithm");
+            nid = OBJ_txt2nid("kyber768");
             break;
         case 1024:
-            nid = register_oid(OID_kyber1024, "KYBER1024", "Kyber Post-Quantum Algorithm");
+            nid = OBJ_txt2nid("kyber1024");
             break;
         default:
             return NULL;

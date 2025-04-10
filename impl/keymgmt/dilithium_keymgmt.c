@@ -96,14 +96,17 @@ static int dilithium_gen(DILITHIUM_KEY *key)
     /* 根据版本生成密钥对 */
     switch (key->version) {
     case 2:
+        key->tls_name = "dilithium2";
         if (pqcrystals_dilithium2_ref_keypair(key->public_key, key->secret_key) != 0)
             goto err;
         break;
     case 3:
+        key->tls_name = "dilithium3";
         if (pqcrystals_dilithium3_ref_keypair(key->public_key, key->secret_key) != 0)
             goto err;
         break;
     case 5:
+        key->tls_name = "dilithium5";
         if (pqcrystals_dilithium5_ref_keypair(key->public_key, key->secret_key) != 0)
             goto err;
         break;
@@ -306,22 +309,37 @@ static int dilithium_match(const DILITHIUM_KEY *key1, const DILITHIUM_KEY *key2,
 {
     int ok = 1;
 
-    if ((selection & OSSL_KEYMGMT_SELECT_PUBLIC_KEY) != 0) {
-        if (key1->public_key == NULL || key2->public_key == NULL)
+    if (((selection & OSSL_KEYMGMT_SELECT_PRIVATE_KEY) != 0) &&
+        ((selection & OSSL_KEYMGMT_SELECT_PUBLIC_KEY) == 0)) {
+        if ((key1->secret_key == NULL && key2->secret_key != NULL) ||
+            (key1->secret_key != NULL && key2->secret_key == NULL) ||
+            ((key1->tls_name != NULL && key2->tls_name != NULL) &&
+             strcmp(key1->tls_name, key2->tls_name))) {
             ok = 0;
-        else if (key1->public_key_len != key2->public_key_len)
-            ok = 0;
-        else if (memcmp(key1->public_key, key2->public_key, key1->public_key_len) != 0)
-            ok = 0;
+        } else {
+            ok = ((key1->secret_key == NULL && key2->secret_key == NULL) ||
+                  ((key1->secret_key != NULL) &&
+                   CRYPTO_memcmp(key1->secret_key, key2->secret_key,
+                                 key1->secret_key_len) == 0));
+        }
     }
-
-    if ((selection & OSSL_KEYMGMT_SELECT_PRIVATE_KEY) != 0) {
-        if (key1->secret_key == NULL || key2->secret_key == NULL)
-            ok = 0;
-        else if (key1->secret_key_len != key2->secret_key_len)
-            ok = 0;
-        else if (memcmp(key1->secret_key, key2->secret_key, key1->secret_key_len) != 0)
-            ok = 0;
+    if ((selection & OSSL_KEYMGMT_SELECT_PUBLIC_KEY) != 0) {
+        if ((key1->public_key == NULL && key2->public_key != NULL) ||
+            (key1->public_key != NULL && key2->public_key == NULL) ||
+            ((key1->tls_name != NULL && key2->tls_name != NULL) &&
+             strcmp(key1->tls_name, key2->tls_name))) {
+            // special case now: If domain parameter matching
+            // requested, consider private key match sufficient:
+            ok = ((selection & OSSL_KEYMGMT_SELECT_DOMAIN_PARAMETERS) != 0) &&
+                 (key1->secret_key != NULL && key2->secret_key != NULL) &&
+                 (CRYPTO_memcmp(key1->secret_key, key2->secret_key,
+                                key1->secret_key_len) == 0);
+        } else {
+            ok = ok && ((key1->public_key == NULL && key2->public_key == NULL) ||
+                        ((key1->public_key != NULL) &&
+                         CRYPTO_memcmp(key1->public_key, key2->public_key,
+                                       key1->public_key_len) == 0));
+        }
     }
 
     return ok;
@@ -438,6 +456,7 @@ static void *dilithium_load(const void *reference, size_t reference_sz)
     dst->has_private = 0;
     dst->sig_len = src->sig_len;
     dst->version = src->version;
+    dst->tls_name = src->tls_name;
     
     /* 复制公钥（如果存在） */
     if (src->public_key != NULL) {

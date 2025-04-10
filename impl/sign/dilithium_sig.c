@@ -253,13 +253,13 @@ static int dilithium_get_ctx_params(void *vctx, OSSL_PARAM params[])
             switch (ctx->pkey->version)
             {
             case 2:
-                tls_name = OID_dilithium2;
+                tls_name = "dilithium2";
                 break;
             case 3:
-                tls_name = OID_dilithium3;
+                tls_name = "dilithium3";
                 break;
             case 5:
-                tls_name = OID_dilithium5;
+                tls_name = "dilithium5";
                 break;
             default:
                 return 0;
@@ -393,86 +393,21 @@ static int dilithium_signverify_init(void *vctx, void *vkey, int operation)
     DILITHIUM_SIGN_CTX *ctx = (DILITHIUM_SIGN_CTX *)vctx;
     DILITHIUM_KEY *key = vkey;
 
-    if (ctx == NULL)
+    if (ctx == NULL || key == NULL)
         return 0;
 
+    ctx->pkey = key;
+    ctx->pkey->references++;
     ctx->operation = operation;
-
-    /* 允许修改摘要算法，直到首次使用 */
     ctx->flag_allow_md = 1;
-
-    /* 如果未提供密钥，则保持当前状态 */
-    if (key == NULL)
-        return 1;
 
     /* 检查密钥类型是否符合操作类型 */
     if ((operation == EVP_PKEY_OP_SIGN && !key->has_private) ||
-        (operation == EVP_PKEY_OP_VERIFY && !key->has_public))
-    {
+        (operation == EVP_PKEY_OP_VERIFY && !key->has_public)) {
         ERR_raise(ERR_LIB_USER, PROV_R_INVALID_KEY);
         return 0;
     }
-
-    /* 保存密钥 */
-    if (ctx->pkey != NULL)
-    {
-        if (ctx->pkey->secret_key != NULL)
-            OPENSSL_secure_clear_free(ctx->pkey->secret_key, ctx->pkey->secret_key_len);
-        OPENSSL_free(ctx->pkey->public_key);
-        OPENSSL_free(ctx->pkey);
-    }
-
-    ctx->pkey = OPENSSL_zalloc(sizeof(*ctx->pkey));
-    if (ctx->pkey == NULL)
-    {
-        ERR_raise(ERR_LIB_USER, ERR_R_MALLOC_FAILURE);
-        return 0;
-    }
-
-    /* 复制密钥信息 */
-    ctx->pkey->version = key->version;
-    ctx->pkey->public_key_len = key->public_key_len;
-    ctx->pkey->secret_key_len = key->secret_key_len;
-    ctx->pkey->sig_len = key->sig_len;
-    ctx->pkey->libctx = key->libctx;
-
-    /* 复制公钥 */
-    if (key->public_key != NULL && key->has_public)
-    {
-        ctx->pkey->public_key = OPENSSL_malloc(key->public_key_len);
-        if (ctx->pkey->public_key == NULL)
-        {
-            ERR_raise(ERR_LIB_USER, ERR_R_MALLOC_FAILURE);
-            goto err;
-        }
-        memcpy(ctx->pkey->public_key, key->public_key, key->public_key_len);
-        ctx->pkey->has_public = 1;
-    }
-
-    /* 复制私钥 */
-    if (key->secret_key != NULL && key->has_private)
-    {
-        ctx->pkey->secret_key = OPENSSL_secure_malloc(key->secret_key_len);
-        if (ctx->pkey->secret_key == NULL)
-        {
-            ERR_raise(ERR_LIB_USER, ERR_R_MALLOC_FAILURE);
-            goto err;
-        }
-        memcpy(ctx->pkey->secret_key, key->secret_key, key->secret_key_len);
-        ctx->pkey->has_private = 1;
-    }
-
     return 1;
-
-err:
-    if (ctx->pkey != NULL)
-    {
-        OPENSSL_free(ctx->pkey->public_key);
-        OPENSSL_secure_clear_free(ctx->pkey->secret_key, ctx->pkey->secret_key_len);
-        OPENSSL_free(ctx->pkey);
-        ctx->pkey = NULL;
-    }
-    return 0;
 }
 
 /* 签名初始化 */

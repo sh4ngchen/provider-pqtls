@@ -109,17 +109,17 @@ static PKCS8_PRIV_KEY_INFO *dilithium_key_to_pkcs8(void *ctx, const DILITHIUM_KE
     }
 
     switch (dilithium_key->version) {
-    case 2:
-        nid = register_oid(OID_dilithium2, "DILITHIUM2", "Dilithium Post-Quantum Algorithm");
-        break;
-    case 3:
-        nid = register_oid(OID_dilithium3, "DILITHIUM3", "Dilithium Post-Quantum Algorithm");
-        break;
-    case 5:
-        nid = register_oid(OID_dilithium5, "DILITHIUM5", "Dilithium Post-Quantum Algorithm");
-        break;
-    default:
-        return NULL;
+        case 2:
+            nid = OBJ_txt2nid("dilithium2");
+            break;
+        case 3:
+            nid = OBJ_txt2nid("dilithium3");
+            break;
+        case 5:
+            nid = OBJ_txt2nid("dilithium5");
+            break;
+        default:
+            return NULL;
     }
     
     
@@ -157,13 +157,13 @@ static X509_PUBKEY *dilithium_key_to_x509_pubkey(void *ctx, const DILITHIUM_KEY 
 
     switch (dilithium_key->version) {
         case 2:
-            nid = register_oid(OID_dilithium2, "DILITHIUM2", "Dilithium Post-Quantum Algorithm");
+            nid = OBJ_txt2nid("dilithium2");
             break;
         case 3:
-            nid = register_oid(OID_dilithium3, "DILITHIUM3", "Dilithium Post-Quantum Algorithm");
+            nid = OBJ_txt2nid("dilithium3");
             break;
         case 5:
-            nid = register_oid(OID_dilithium5, "DILITHIUM5", "Dilithium Post-Quantum Algorithm");
+            nid = OBJ_txt2nid("dilithium5");
             break;
         default:
             return NULL;
