@@ -225,7 +225,7 @@ static int dilithium_decode_der(void *ctx, OSSL_CORE_BIO *cin, int selection,
 
                 params[0] = OSSL_PARAM_construct_int(OSSL_OBJECT_PARAM_DATA, &object_type);
                 params[1] = OSSL_PARAM_construct_utf8_string(OSSL_OBJECT_PARAM_DATA_TYPE, dec_ctx->keytype_name, 0);
-                params[2] = OSSL_PARAM_construct_octet_string(OSSL_OBJECT_PARAM_REFERENCE, key, sizeof(*key));
+                params[2] = OSSL_PARAM_construct_octet_string(OSSL_OBJECT_PARAM_REFERENCE, &key, sizeof(key));
                 params[3] = OSSL_PARAM_construct_end();
 
                 ret = data_cb(params, data_cbarg);
@@ -273,7 +273,7 @@ static int dilithium_decode_der(void *ctx, OSSL_CORE_BIO *cin, int selection,
 
                 params[0] = OSSL_PARAM_construct_int(OSSL_OBJECT_PARAM_DATA, &object_type);
                 params[1] = OSSL_PARAM_construct_utf8_string(OSSL_OBJECT_PARAM_DATA_TYPE, dec_ctx->keytype_name, 0);
-                params[2] = OSSL_PARAM_construct_octet_string(OSSL_OBJECT_PARAM_REFERENCE, key, sizeof(*key));
+                params[2] = OSSL_PARAM_construct_octet_string(OSSL_OBJECT_PARAM_REFERENCE, &key, sizeof(key));
                 params[3] = OSSL_PARAM_construct_end();
 
                 ret = data_cb(params, data_cbarg);

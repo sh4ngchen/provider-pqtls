@@ -4,13 +4,6 @@
 
 一个支持后量子加密算法并适配TLS协议的OpenSSL Provider
 
-## 当前实现内容
-
-- **密钥管理(keymgmt)**: 实现Kyber/Dilithium密钥对的生成、导入、导出和管理
-- **编码/解码(encoder/decoder)**: 实现Kyber/Dilithium密钥的编解码
-- **Kyber KEM**: 实现Kyber封装/解封装传递共享密钥
-- **Dilithium Sig**: 实现Dilithium签名/验签
-
 ## 代码结构
 
 ```bash
@@ -26,9 +19,9 @@
 │   ├── decoder
 │   ├── keymgmt
 │   ├── include
-│   └── prov_capabilities.c
+│   └── prov_capabilities.c # 注册TLS所需的 groups & sigalgs
 ├── util  # 工具
-│   ├── x509.c
+│   ├── x509.c # 读取x509密钥的唯一办法？copy from openssl
 │   └── util.h
 ├── provider.h
 ├── provider.c
@@ -152,9 +145,19 @@ openssl dgst -sha256 -verify dilithium3.pub -signature dilithium3.sig message.tx
 ```bash
 # 生成crt证书
 openssl req -x509 -new -key dilithium2.pem -out dilithium2.crt -days 365 \
-  -subj "/CN=Post-Quantum Test Server" \
+  -subj "/CN=PQ-TLS Test Server" \
   -addext "keyUsage=digitalSignature" \
   -addext "basicConstraints=CA:FALSE"
+```
+
+### Test s_server
+
+```bash
+# 启动s_server(default port: 4433)
+openssl s_server -cert dilithium2.crt -key dilithium2.pem -groups kyber512 -sigalgs dilithium2 -www -tls1_3
+
+# 启动s_client
+openssl s_client -connect localhost:4433 -groups kyber512 -sigalgs dilithium2 -CAfile dilithium2.crt
 ```
 
 ## TODO List
@@ -166,7 +169,7 @@ openssl req -x509 -new -key dilithium2.pem -out dilithium2.crt -days 365 \
 - [x] 实现`Dilithium signature`
 - [x] 使用`openssl req`生成`crt`证书
 - [x] 注册`groups`和`sigalgs`
-- [ ] 适配`s_server`与`s_client`功能
+- [x] 适配`s_server`与`s_client`功能
 - [ ] 进行性能测试
 - [ ] 完善文档和示例
 

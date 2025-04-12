@@ -33,6 +33,8 @@ typedef struct {
     size_t public_key_len;
     size_t secret_key_len;
     int version;
+    char *tls_name;
+    char *propq;
 } KYBER_GEN_CTX;
 
 /* Decoder context */

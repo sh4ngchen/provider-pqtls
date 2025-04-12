@@ -88,15 +88,6 @@ static void dilithium_freectx(void *vctx)
     /* 释放属性查询字符串 */
     OPENSSL_free(ctx->propq);
 
-    /* 释放密钥和缓冲区 */
-    if (ctx->pkey != NULL)
-    {
-        if (ctx->pkey->secret_key != NULL)
-            OPENSSL_secure_clear_free(ctx->pkey->secret_key, ctx->pkey->secret_key_len);
-        OPENSSL_free(ctx->pkey->public_key);
-        OPENSSL_free(ctx->pkey);
-    }
-
     /* 释放缓冲区 */
     OPENSSL_free(ctx->tbs);
     OPENSSL_free(ctx->sig);

@@ -148,11 +148,6 @@ static int kyber_has(const void *keydata, int selection)
     return ok;
 }
 
-/* 直接使用通用函数作为别名 */
-#define kyber512_has kyber_has
-#define kyber768_has kyber_has
-#define kyber1024_has kyber_has
-
 /* 通用的导入密钥数据函数 */
 static OSSL_FUNC_keymgmt_import_fn kyber_import;
 static int kyber_import(void *keydata, int selection, const OSSL_PARAM params[])
@@ -217,11 +212,6 @@ static int kyber_import(void *keydata, int selection, const OSSL_PARAM params[])
 
     return 1;
 }
-
-/* 直接使用通用函数作为别名 */
-#define kyber512_import kyber_import
-#define kyber768_import kyber_import
-#define kyber1024_import kyber_import
 
 /* 导出密钥函数 - 根据version确定使用的长度 */
 static OSSL_FUNC_keymgmt_export_fn kyber_export;
@@ -309,11 +299,6 @@ static const OSSL_PARAM *kyber_import_types(int selection)
     return import_types;
 }
 
-/* 直接使用通用函数作为别名 */
-#define kyber512_import_types kyber_import_types
-#define kyber768_import_types kyber_import_types
-#define kyber1024_import_types kyber_import_types
-
 /* 导出类型定义 - 通用 */
 static OSSL_FUNC_keymgmt_export_types_fn kyber_export_types;
 static const OSSL_PARAM *kyber_export_types(int selection)
@@ -325,11 +310,6 @@ static const OSSL_PARAM *kyber_export_types(int selection)
     };
     return export_types;
 }
-
-/* 直接使用通用函数作为别名 */
-#define kyber512_export_types kyber_export_types
-#define kyber768_export_types kyber_export_types
-#define kyber1024_export_types kyber_export_types
 
 /* 密钥生成初始化 - 根据不同位数 */
 static void *kyber_gen_init(void *provctx, int selection, const OSSL_PARAM params[], int version)
@@ -467,114 +447,144 @@ static void kyber_gen_cleanup(void *genctx)
     }
 }
 
-/* 直接使用通用函数作为别名 */
-#define kyber512_gen_cleanup kyber_gen_cleanup
-#define kyber768_gen_cleanup kyber_gen_cleanup
-#define kyber1024_gen_cleanup kyber_gen_cleanup
-
 /* 密钥加载 - 通用 */
 static OSSL_FUNC_keymgmt_load_fn kyber_load;
 static void *kyber_load(const void *reference, size_t reference_sz)
 {
-    KYBER_KEY *src = (KYBER_KEY *)reference;
-    KYBER_KEY *dst = NULL;
-    
-    if (reference_sz != sizeof(KYBER_KEY) || src == NULL)
-        return NULL;
-        
-    // 创建新的密钥对象
-    dst = OPENSSL_zalloc(sizeof(*dst));
-    if (dst == NULL) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
-        return NULL;
+    KYBER_KEY *key = NULL;
+    if (reference_sz == sizeof(key)){
+        key = *(KYBER_KEY **)reference;
+        *(KYBER_KEY **)reference = NULL;
+        return key;
     }
-    
-    // 复制基本字段，包括版本
-    dst->version = src->version;
-    dst->public_key_len = src->public_key_len;
-    dst->secret_key_len = src->secret_key_len;
-    dst->has_public = 0;
-    dst->has_private = 0;
-    
-    // 分配并复制公钥（如果存在）
-    if (src->has_public && src->public_key != NULL) {
-        dst->public_key = OPENSSL_malloc(src->public_key_len);
-        if (dst->public_key == NULL) {
-            OPENSSL_free(dst);
-            ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
-            return NULL;
-        }
-        memcpy(dst->public_key, src->public_key, src->public_key_len);
-        dst->has_public = 1;
-    } else {
-        dst->public_key = NULL;
-    }
-    
-    // 分配并复制私钥（如果存在）
-    if (src->has_private && src->secret_key != NULL) {
-        dst->secret_key = OPENSSL_malloc(src->secret_key_len);
-        if (dst->secret_key == NULL) {
-            OPENSSL_free(dst->public_key);
-            OPENSSL_free(dst);
-            ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
-            return NULL;
-        }
-        memcpy(dst->secret_key, src->secret_key, src->secret_key_len);
-        dst->has_private = 1;
-    } else {
-        dst->secret_key = NULL;
-    }
-    
-    return dst;
+    return NULL;
 }
 
-/* 直接使用通用函数作为别名 */
-#define kyber512_load kyber_load
-#define kyber768_load kyber_load
-#define kyber1024_load kyber_load
+static const OSSL_PARAM *kyber_gen_settable_params(void *provctx) {
+    static OSSL_PARAM settable[] = {
+        OSSL_PARAM_utf8_string(OSSL_PKEY_PARAM_GROUP_NAME, NULL, 0),
+        OSSL_PARAM_utf8_string(OSSL_KDF_PARAM_PROPERTIES, NULL, 0),
+        OSSL_PARAM_END};
+    return settable;
+}
+
+static int kyber_gen_set_params(void *genctx, const OSSL_PARAM params[]) {
+    KYBER_GEN_CTX *ctx = (KYBER_GEN_CTX *)genctx;
+    const OSSL_PARAM *p;
+
+    if (ctx == NULL)
+        return 0;
+
+    p = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_GROUP_NAME);
+    if (p != NULL) {
+        ctx->tls_name = OPENSSL_strdup(p->data);
+    }
+
+    p = OSSL_PARAM_locate_const(params, OSSL_KDF_PARAM_PROPERTIES);
+    if (p != NULL) {
+        if (p->data_type != OSSL_PARAM_UTF8_STRING)
+            return 0;
+        ctx->propq = OPENSSL_strdup(p->data);
+        if (ctx->propq == NULL)
+            return 0;
+    }
+
+    return 1;
+}
+
+static int kyber_get_params(void *keydata, OSSL_PARAM params[]) {
+    KYBER_KEY *key = (KYBER_KEY *)keydata;
+    OSSL_PARAM *p;
+
+    if (key == NULL || params == NULL)
+        return 0;
+
+    if ((p = OSSL_PARAM_locate(params, OSSL_PKEY_PARAM_ENCODED_PUBLIC_KEY)) != NULL) {
+        if (!OSSL_PARAM_set_octet_string(p, key->public_key, key->public_key_len))
+            return 0;
+    }
+    return 1;
+}
+
+static const OSSL_PARAM settable_params[] = {
+    OSSL_PARAM_octet_string(OSSL_PKEY_PARAM_ENCODED_PUBLIC_KEY, NULL, 0),
+    OSSL_PARAM_END};
+
+static const OSSL_PARAM *kyber_settable_params(void *provctx) {
+    return settable_params;
+}
+
+static int kyber_set_params(void *keydata, const OSSL_PARAM params[]) {
+    KYBER_KEY *key = (KYBER_KEY *)keydata;
+    const OSSL_PARAM *p;
+
+    p = OSSL_PARAM_locate_const(params, OSSL_PKEY_PARAM_ENCODED_PUBLIC_KEY);
+    if (p != NULL) {
+        size_t used_len;
+        if (p->data_size != key->public_key_len || 
+            !OSSL_PARAM_get_octet_string(p, (void **)&key->public_key, key->public_key_len, &used_len))
+            return 0;
+    }
+
+    return 1;
+}
+
+static const OSSL_PARAM gettable_params[] = {
+    OSSL_PARAM_octet_string(OSSL_PKEY_PARAM_ENCODED_PUBLIC_KEY, NULL, 0),
+    OSSL_PARAM_END};
+
+static const OSSL_PARAM *kyber_gettable_params(void *provctx) {
+    return gettable_params;
+}
 
 /* 函数表 - 依然保留三个不同的，每个对应不同位数 */
 const OSSL_DISPATCH kyber512_keymgmt_functions[] = {
     { OSSL_FUNC_KEYMGMT_NEW, (void (*)(void))kyber512_newdata },
     { OSSL_FUNC_KEYMGMT_FREE, (void (*)(void))kyber512_freedata },
-    { OSSL_FUNC_KEYMGMT_HAS, (void (*)(void))kyber512_has },
-    { OSSL_FUNC_KEYMGMT_IMPORT, (void (*)(void))kyber512_import },
+    { OSSL_FUNC_KEYMGMT_HAS, (void (*)(void))kyber_has },
+    { OSSL_FUNC_KEYMGMT_GET_PARAMS,  (void (*)(void))kyber_get_params},
+    { OSSL_FUNC_KEYMGMT_SETTABLE_PARAMS, (void (*)(void))kyber_settable_params },
+    { OSSL_FUNC_KEYMGMT_SET_PARAMS, (void (*)(void))kyber_set_params },
+    { OSSL_FUNC_KEYMGMT_GETTABLE_PARAMS, (void (*)(void))kyber_gettable_params},
+    { OSSL_FUNC_KEYMGMT_IMPORT, (void (*)(void))kyber_import },
     { OSSL_FUNC_KEYMGMT_EXPORT, (void (*)(void))kyber512_export },
     { OSSL_FUNC_KEYMGMT_GEN_INIT, (void (*)(void))kyber512_gen_init },
     { OSSL_FUNC_KEYMGMT_GEN, (void (*)(void))kyber512_gen },
-    { OSSL_FUNC_KEYMGMT_GEN_CLEANUP, (void (*)(void))kyber512_gen_cleanup },
-    { OSSL_FUNC_KEYMGMT_IMPORT_TYPES, (void (*)(void))kyber512_import_types },
-    { OSSL_FUNC_KEYMGMT_EXPORT_TYPES, (void (*)(void))kyber512_export_types },
-    { OSSL_FUNC_KEYMGMT_LOAD, (void (*)(void))kyber512_load },
+    { OSSL_FUNC_KEYMGMT_GEN_SET_PARAMS, (void (*)(void))kyber_gen_set_params },
+    { OSSL_FUNC_KEYMGMT_GEN_SETTABLE_PARAMS, (void (*)(void))kyber_gen_settable_params },
+    { OSSL_FUNC_KEYMGMT_GEN_CLEANUP, (void (*)(void))kyber_gen_cleanup },
+    { OSSL_FUNC_KEYMGMT_IMPORT_TYPES, (void (*)(void))kyber_import_types },
+    { OSSL_FUNC_KEYMGMT_EXPORT_TYPES, (void (*)(void))kyber_export_types },
+    { OSSL_FUNC_KEYMGMT_LOAD, (void (*)(void))kyber_load },
     { 0, NULL }
 };
 
 const OSSL_DISPATCH kyber768_keymgmt_functions[] = {
     { OSSL_FUNC_KEYMGMT_NEW, (void (*)(void))kyber768_newdata },
     { OSSL_FUNC_KEYMGMT_FREE, (void (*)(void))kyber768_freedata },
-    { OSSL_FUNC_KEYMGMT_HAS, (void (*)(void))kyber768_has },
-    { OSSL_FUNC_KEYMGMT_IMPORT, (void (*)(void))kyber768_import },
+    { OSSL_FUNC_KEYMGMT_HAS, (void (*)(void))kyber_has },
+    { OSSL_FUNC_KEYMGMT_IMPORT, (void (*)(void))kyber_import },
     { OSSL_FUNC_KEYMGMT_EXPORT, (void (*)(void))kyber768_export },
     { OSSL_FUNC_KEYMGMT_GEN_INIT, (void (*)(void))kyber768_gen_init },
     { OSSL_FUNC_KEYMGMT_GEN, (void (*)(void))kyber768_gen },
-    { OSSL_FUNC_KEYMGMT_GEN_CLEANUP, (void (*)(void))kyber768_gen_cleanup },
-    { OSSL_FUNC_KEYMGMT_IMPORT_TYPES, (void (*)(void))kyber768_import_types },
-    { OSSL_FUNC_KEYMGMT_EXPORT_TYPES, (void (*)(void))kyber768_export_types },
-    { OSSL_FUNC_KEYMGMT_LOAD, (void (*)(void))kyber768_load },
+    { OSSL_FUNC_KEYMGMT_GEN_CLEANUP, (void (*)(void))kyber_gen_cleanup },
+    { OSSL_FUNC_KEYMGMT_IMPORT_TYPES, (void (*)(void))kyber_import_types },
+    { OSSL_FUNC_KEYMGMT_EXPORT_TYPES, (void (*)(void))kyber_export_types },
+    { OSSL_FUNC_KEYMGMT_LOAD, (void (*)(void))kyber_load },
     { 0, NULL }
 };
 
 const OSSL_DISPATCH kyber1024_keymgmt_functions[] = {
     { OSSL_FUNC_KEYMGMT_NEW, (void (*)(void))kyber1024_newdata },
     { OSSL_FUNC_KEYMGMT_FREE, (void (*)(void))kyber1024_freedata },
-    { OSSL_FUNC_KEYMGMT_HAS, (void (*)(void))kyber1024_has },
-    { OSSL_FUNC_KEYMGMT_IMPORT, (void (*)(void))kyber1024_import },
+    { OSSL_FUNC_KEYMGMT_HAS, (void (*)(void))kyber_has },
+    { OSSL_FUNC_KEYMGMT_IMPORT, (void (*)(void))kyber_import },
     { OSSL_FUNC_KEYMGMT_EXPORT, (void (*)(void))kyber1024_export },
     { OSSL_FUNC_KEYMGMT_GEN_INIT, (void (*)(void))kyber1024_gen_init },
     { OSSL_FUNC_KEYMGMT_GEN, (void (*)(void))kyber1024_gen },
-    { OSSL_FUNC_KEYMGMT_GEN_CLEANUP, (void (*)(void))kyber1024_gen_cleanup },
-    { OSSL_FUNC_KEYMGMT_IMPORT_TYPES, (void (*)(void))kyber1024_import_types },
-    { OSSL_FUNC_KEYMGMT_EXPORT_TYPES, (void (*)(void))kyber1024_export_types },
-    { OSSL_FUNC_KEYMGMT_LOAD, (void (*)(void))kyber1024_load },
+    { OSSL_FUNC_KEYMGMT_GEN_CLEANUP, (void (*)(void))kyber_gen_cleanup },
+    { OSSL_FUNC_KEYMGMT_IMPORT_TYPES, (void (*)(void))kyber_import_types },
+    { OSSL_FUNC_KEYMGMT_EXPORT_TYPES, (void (*)(void))kyber_export_types },
+    { OSSL_FUNC_KEYMGMT_LOAD, (void (*)(void))kyber_load },
     { 0, NULL }
 };

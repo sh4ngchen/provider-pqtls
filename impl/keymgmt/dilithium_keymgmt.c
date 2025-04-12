@@ -4,10 +4,24 @@
 #include <openssl/proverr.h>
 #include <openssl/err.h>
 #include <openssl/rand.h>
+#include <openssl/param_build.h>
 #include "../include/impl.h"
 #include "../include/dilithium.h"
 
-/* 创建一个新的 Dilithium 密钥结构，根据版本设置不同参数 */
+int dilithium_param_build_set_octet_string(OSSL_PARAM_BLD *bld, OSSL_PARAM *p,
+                                            const char *key,
+                                            const unsigned char *data,
+                                            size_t data_len) {
+    if (bld != NULL)
+        return OSSL_PARAM_BLD_push_octet_string(bld, key, data, data_len);
+
+    p = OSSL_PARAM_locate(p, key);
+    if (p != NULL)
+        return OSSL_PARAM_set_octet_string(p, data, data_len);
+    return 1;
+}
+
+
 static DILITHIUM_KEY *dilithium_key_new(OSSL_LIB_CTX *libctx, int version)
 {
     DILITHIUM_KEY *key = OPENSSL_zalloc(sizeof(DILITHIUM_KEY));
@@ -45,19 +59,60 @@ static DILITHIUM_KEY *dilithium_key_new(OSSL_LIB_CTX *libctx, int version)
 /* 增加密钥的引用计数 */
 static DILITHIUM_KEY *dilithium_key_dup(DILITHIUM_KEY *key)
 {
-    if (key != NULL)
-        ++key->references;
-    return key;
+    if (key == NULL)
+        return NULL;
+
+    DILITHIUM_KEY *new_key = OPENSSL_zalloc(sizeof(DILITHIUM_KEY));
+    if (new_key == NULL)
+        return NULL;
+
+    new_key->libctx = key->libctx;
+    new_key->version = key->version;
+    new_key->public_key_len = key->public_key_len;
+    new_key->secret_key_len = key->secret_key_len;
+    new_key->sig_len = key->sig_len;
+    new_key->has_public = key->has_public;
+    new_key->has_private = key->has_private;
+
+    if (key->public_key != NULL) {
+        new_key->public_key = OPENSSL_malloc(key->public_key_len);
+        if (new_key->public_key == NULL) {
+            OPENSSL_free(new_key);
+            return NULL;
+        }
+        memcpy(new_key->public_key, key->public_key, key->public_key_len);
+    }
+
+    if (key->secret_key != NULL) {
+        new_key->secret_key = OPENSSL_secure_malloc(key->secret_key_len);
+        if (new_key->secret_key == NULL) {
+            OPENSSL_free(new_key->public_key);
+            OPENSSL_free(new_key);
+            return NULL;
+        }
+        memcpy(new_key->secret_key, key->secret_key, key->secret_key_len);
+    }
+
+    return new_key;
 }
 
 /* 释放密钥结构 */
 static void dilithium_key_free(DILITHIUM_KEY *key)
 {
-    if (key != NULL && --key->references == 0) {
+    if (key == NULL)
+        return;
+
+    if (key->secret_key != NULL) {
         OPENSSL_clear_free(key->secret_key, key->secret_key_len);
-        OPENSSL_free(key->public_key);
-        OPENSSL_free(key);
+        key->secret_key = NULL;
     }
+
+    if (key->public_key != NULL) {
+        OPENSSL_free(key->public_key);
+        key->public_key = NULL;
+    }
+
+    OPENSSL_free(key);
 }
 
 /* 创建一个空的 Dilithium 密钥 */
@@ -256,29 +311,78 @@ static int dilithium_import(DILITHIUM_KEY *key, int keytype, const OSSL_PARAM pa
     return 1;
 }
 
-static int dilithium_export(DILITHIUM_KEY *key, int keytype,
-                           OSSL_CALLBACK *param_cb, void *cbarg)
+int dilithium_key_to_params(const DILITHIUM_KEY *key, OSSL_PARAM_BLD *tmpl,
+                            OSSL_PARAM *params, int include_private)
 {
-    OSSL_PARAM params[3], *p = params;
+    int ret = 0;
 
     if (key == NULL)
         return 0;
 
-    if ((keytype & OSSL_KEYMGMT_SELECT_PUBLIC_KEY) != 0 && key->public_key != NULL) {
-        *p++ = OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_PUB_KEY,
-                                               key->public_key,
-                                               key->public_key_len);
+    if (key->public_key != NULL) {
+        OSSL_PARAM *p = NULL;
+        if (tmpl == NULL) {
+            p = OSSL_PARAM_locate(params, OSSL_PKEY_PARAM_PUB_KEY);
+        }
+
+        if (p != NULL || tmpl != NULL) {
+            if (key->public_key_len == 0 || !dilithium_param_build_set_octet_string(
+                                                tmpl, p, OSSL_PKEY_PARAM_PUB_KEY,
+                                                key->public_key, key->public_key_len))
+                goto err;
+        }
+    }
+    if (key->secret_key != NULL && include_private) {
+        OSSL_PARAM *p = NULL;
+        if (tmpl == NULL) {
+            p = OSSL_PARAM_locate(params, OSSL_PKEY_PARAM_PRIV_KEY);
+        }
+
+        if (p != NULL || tmpl != NULL) {
+            if (key->secret_key_len == 0 || !dilithium_param_build_set_octet_string(
+                                                tmpl, p, OSSL_PKEY_PARAM_PRIV_KEY,
+                                                key->secret_key, key->secret_key_len))
+                goto err;
+        }
+    }
+    ret = 1;
+err:
+    return ret;
+}
+
+static int dilithium_export(DILITHIUM_KEY *keydata, int selection,
+                           OSSL_CALLBACK *param_cb, void *cbarg)
+{
+    DILITHIUM_KEY *key = (DILITHIUM_KEY *)keydata;
+    OSSL_PARAM_BLD *tmpl;
+    OSSL_PARAM *params = NULL;
+    int ok = 1;
+
+    if (key == NULL || param_cb == NULL)
+        return 0;
+
+    tmpl = OSSL_PARAM_BLD_new();
+    if (tmpl == NULL)
+        return 0;
+
+    if ((selection & OSSL_KEYMGMT_SELECT_KEYPAIR) != 0) {
+        int include_private =
+            selection & OSSL_KEYMGMT_SELECT_PRIVATE_KEY ? 1 : 0;
+
+        ok = ok && dilithium_key_to_params(key, tmpl, NULL, include_private);
     }
 
-    if ((keytype & OSSL_KEYMGMT_SELECT_PRIVATE_KEY) != 0 && key->secret_key != NULL) {
-        *p++ = OSSL_PARAM_construct_octet_string(OSSL_PKEY_PARAM_PRIV_KEY,
-                                               key->secret_key,
-                                               key->secret_key_len);
+    params = OSSL_PARAM_BLD_to_param(tmpl);
+    if (params == NULL) {
+        ok = 0;
+        goto err;
     }
 
-    *p = OSSL_PARAM_construct_end();
-
-    return param_cb(params, cbarg);
+    ok = ok & param_cb(params, cbarg);
+    OSSL_PARAM_free(params);
+err:
+    OSSL_PARAM_BLD_free(tmpl);
+    return ok;
 }
 
 /* 密钥检查 */
@@ -354,7 +458,7 @@ static int dilithium_get_params(DILITHIUM_KEY *key, OSSL_PARAM params[], int sec
         return 0;
 
     p = OSSL_PARAM_locate(params, OSSL_PKEY_PARAM_BITS);
-    if (p != NULL && !OSSL_PARAM_set_int(p, key->public_key_len * 8))
+    if (p != NULL && !OSSL_PARAM_set_int(p, security_bits))
         return 0;
 
     p = OSSL_PARAM_locate(params, OSSL_PKEY_PARAM_MAX_SIZE);
@@ -434,56 +538,13 @@ static const OSSL_PARAM *dilithium_export_types(int selection)
 /* 加载密钥 */
 static void *dilithium_load(const void *reference, size_t reference_sz)
 {
-    const DILITHIUM_KEY *src = (const DILITHIUM_KEY *)reference;
-    DILITHIUM_KEY *dst = NULL;
-    
-    if (reference_sz != sizeof(DILITHIUM_KEY) || src == NULL)
-        return NULL;
-        
-    /* 创建新的密钥对象 */
-    dst = OPENSSL_zalloc(sizeof(*dst));
-    if (dst == NULL) {
-        ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
-        return NULL;
+    DILITHIUM_KEY *key = NULL;
+    if (reference_sz == sizeof(key)){
+        key = *(DILITHIUM_KEY **)reference;
+        *(DILITHIUM_KEY **)reference = NULL;
+        return key;
     }
-    
-    /* 初始化基本字段 */
-    dst->libctx = src->libctx;
-    dst->public_key_len = src->public_key_len;
-    dst->secret_key_len = src->secret_key_len;
-    dst->references = 1;
-    dst->has_public = 0;
-    dst->has_private = 0;
-    dst->sig_len = src->sig_len;
-    dst->version = src->version;
-    dst->tls_name = src->tls_name;
-    
-    /* 复制公钥（如果存在） */
-    if (src->public_key != NULL) {
-        dst->public_key = OPENSSL_malloc(src->public_key_len);
-        if (dst->public_key == NULL) {
-            OPENSSL_free(dst);
-            ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
-            return NULL;
-        }
-        memcpy(dst->public_key, src->public_key, src->public_key_len);
-        dst->has_public = 1;
-    }
-    
-    /* 复制私钥（如果存在） */
-    if (src->secret_key != NULL) {
-        dst->secret_key = OPENSSL_secure_malloc(src->secret_key_len);
-        if (dst->secret_key == NULL) {
-            OPENSSL_free(dst->public_key);
-            OPENSSL_free(dst);
-            ERR_raise(ERR_LIB_PROV, ERR_R_MALLOC_FAILURE);
-            return NULL;
-        }
-        memcpy(dst->secret_key, src->secret_key, src->secret_key_len);
-        dst->has_private = 1;
-    }
-    
-    return dst;
+    return NULL;
 }
 
 /* 密钥管理方法定义 - Dilithium2 */
